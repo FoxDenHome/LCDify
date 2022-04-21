@@ -45,8 +45,14 @@ class LCDKeyPollResult():
     pressed: list[int]
 
 class LCDException(Exception):
+    pass
+
+class LCDTimeoutException(LCDException):
+    pass
+
+class LCDResponseException(LCDException):
     def __init__(self, packet):
-        super().__init__(f"LCDException: {packet.data_as_str()}")
+        super().__init__(f"LCDResponseException: {packet.data_as_str()}")
         self.packet = packet
 
 class LCD():
@@ -241,12 +247,14 @@ class LCD():
         
         self.command_lock.acquire()
         self.serial.write(packet)
-        self.command_lock.wait_for(lambda: self.last_response and self.last_response.command == command)
+        if not self.command_lock.wait_for(lambda: self.last_response and self.last_response.command == command, timeout=0.25):
+            raise LCDTimeoutException()
+
         resp = self.last_response
         self.last_response = None
         self.command_lock.release()
 
         if resp.type == LCDPacket.TYPE_ERROR:
-            raise LCDException(resp)
+            raise LCDResponseException(resp)
     
         return resp.data
