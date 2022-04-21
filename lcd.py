@@ -33,11 +33,6 @@ class LCDCursorType(Enum):
     BLINKING_BLOCK_AND_UNDERSCORE = 3
     BLINKING_UNDERSCORE = 4
 
-class LCDReportType(Enum):
-    KEY = 0x00
-    FAN = 0x01
-    TEMPERATURE = 0x02
-
 @dataclass
 class LCDKeyMask():
     mask: int
@@ -85,6 +80,10 @@ class LCDResponseException(LCDException):
         self.packet = packet
 
 class LCD():
+    REPORT_KEY = 0x00
+    REPORT_FAN = 0x01
+    REPORT_TEMPERATURE = 0x02
+
     GPO_LED3_GREEN = 5
     GPO_LED3_RED = 6
     GPO_LED2_GREEN = 7
@@ -101,39 +100,46 @@ class LCD():
         [GPO_LED3_RED, GPO_LED3_GREEN],
     ]
 
+    port: str
+    baudrate: int
+    _serial: Serial
+    _last_response: LCDPacket
+    _command_lock: Condition
+    _buffer: list[int]
+    _reader_thread_var: Thread
+
     def __init__(self, port: str, baudrate: int = LCD_BAUDRATE):
         self.port = port
         self.baudrate = baudrate
-        self.serial = None
-        self.last_response = None
-        self.command_lock = Condition()
-        self.buffer = []
-        self.reader_thread = None
-        self.report_handlers = {}
-        for report_type in LCDReportType:
-            self.report_handlers[report_type.value] = []
+        self._serial = None
+        self._last_response = None
+        self._command_lock = Condition()
+        self._buffer = []
+        self._reader_thread_var = None
+
+        self._key_press_handlers = []
 
     def open(self) -> None:
         self.close()
-        self.serial = Serial(self.port, self.baudrate, timeout=1)
-        self.reader_thread = Thread(target=self._reader_thread, daemon=True, name=f"LCD reader {self.port}")
-        self.reader_thread.start()
+        self._serial = Serial(self.port, self.baudrate, timeout=1)
+        self._reader_thread_var = Thread(target=self._reader_thread, daemon=True, name=f"LCD reader {self.port}")
+        self._reader_thread_var.start()
 
     def close(self) -> None:
-        if self.serial is None:
+        if self._serial is None:
             return
-        self.serial.close()
-        self.serial = None
-        self.buffer = []
-        if self.reader_thread is not None:
-            self.reader_thread.join()
-            self.reader_thread = None
+        self._serial.close()
+        self._serial = None
+        self._buffer = []
+        if self._reader_thread_var is not None:
+            self._reader_thread_var.join()
+            self._reader_thread_var = None
 
-    def register_handler(self, report: LCDReportType, handler) -> None:
-        self.report_handlers[report.value].append(handler)
+    def register_key_press_handler(self, handler) -> None:
+        self._key_press_handlers.append(handler)
 
-    def unregister_handler(self, report: LCDReportType, handler) -> None:
-        self.report_handlers[report.value].remove(handler)
+    def unregister_key_press_handler(self, handler) -> None:
+        self._key_press_handlers.remove(handler)
 
     def ping(self) -> None:
         self.send(0x00)
@@ -193,12 +199,12 @@ class LCD():
         return self.send(0x23, [idx])
 
     def _reader_thread(self) -> None:
-        while self.serial is not None:
+        while self._serial is not None:
             self._read()
             sleep(0.01)
 
     def _read(self) -> None:
-        self.buffer += self.serial.read(self.serial.in_waiting)
+        self._buffer += self._serial.read(self._serial.in_waiting)
         packet = self._check_buffer()
         if packet is None:
             return
@@ -206,42 +212,36 @@ class LCD():
             print("REQUEST type packet from LCD. This should never happen!")
             return
         if packet.type == LCDPacketType.REPORT:
-            handlers = self.report_handlers[packet.command]
-            if handlers is None:
-                print(f"Unknown report command: {packet.command}")
-                return
-            for handler in handlers:
-                handler(packet.data)
             return
-        self.command_lock.acquire()
-        self.last_response = packet
-        self.command_lock.notify()
-        self.command_lock.release()
+        self._command_lock.acquire()
+        self._last_response = packet
+        self._command_lock.notify()
+        self._command_lock.release()
 
     def _skip_buffer(self, num: int = 1) -> LCDPacket:
-        self.buffer = self.buffer[num:]
+        self._buffer = self._buffer[num:]
         return self._check_buffer()
 
     def _check_buffer(self) -> LCDPacket:
-        if len(self.buffer) < 4:
+        if len(self._buffer) < 4:
             return None
 
-        cmd = self.buffer[0]
-        data_len = self.buffer[1]
+        cmd = self._buffer[0]
+        data_len = self._buffer[1]
         if data_len > MAX_DATA_LENGTH:
             return self._skip_buffer()
 
-        if len(self.buffer) < data_len + 4:
+        if len(self._buffer) < data_len + 4:
             return None
 
-        crcBytes = self.buffer[2+data_len:4+data_len]
+        crcBytes = self._buffer[2+data_len:4+data_len]
         presentedCrc = crcBytes[0] | (crcBytes[1] << 8)
-        calculatedCrc = crc16(self.buffer[:2+data_len])
+        calculatedCrc = crc16(self._buffer[:2+data_len])
         if presentedCrc != calculatedCrc:
             return self._skip_buffer()
 
-        data = self.buffer[2:2+data_len]
-        self.buffer = self.buffer[4+data_len:]
+        data = self._buffer[2:2+data_len]
+        self._buffer = self._buffer[4+data_len:]
         return LCDPacket(cmd, data)
 
     def send(self, command: int, data: bytearray = []) -> bytearray:
@@ -255,14 +255,14 @@ class LCD():
         packet[2 + data_len] = crc & 0xFF
         packet[3 + data_len] = crc >> 8
         
-        self.command_lock.acquire()
-        self.serial.write(packet)
-        if not self.command_lock.wait_for(lambda: self.last_response and self.last_response.command == command, timeout=0.25):
+        self._command_lock.acquire()
+        self._serial.write(packet)
+        if not self._command_lock.wait_for(lambda: self._last_response and self._last_response.command == command, timeout=0.25):
             raise LCDTimeoutException()
 
-        resp = self.last_response
-        self.last_response = None
-        self.command_lock.release()
+        resp = self._last_response
+        self._last_response = None
+        self._command_lock.release()
 
         if resp.type == LCDPacketType.ERROR:
             raise LCDResponseException(resp)
