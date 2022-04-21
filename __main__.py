@@ -1,7 +1,8 @@
 from time import sleep
 from lcd import LCD, LCD_KEY_MASK_ALL
+from sys import argv
 
-lcd = LCD('COM18')
+lcd = LCD(argv[1])
 
 def initial_config(lcd: LCD):
     lcd.set_backlight(10)
