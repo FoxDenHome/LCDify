@@ -41,7 +41,17 @@ class LCDKeyMask():
     def has(self, key: LCDKey):
         return (self.mask & key.value) != 0
 
-    def all(self):
+    def add(self, key: LCDKey):
+        self.mask |= key.value
+
+    def remove(self, key: LCDKey):
+        self.mask &= ~key.value
+
+    def add_all(self):
+        for key in LCDKey:
+            self.add(key)
+
+    def list(self):
         return [key for key in LCDKey if self.has(key)]
 
     def raw(self):
