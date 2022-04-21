@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from threading import Condition, Thread
 from time import sleep
 from serial import Serial
@@ -6,7 +7,8 @@ from crc import crc16
 LCD_BAUDRATE = 115200
 MAX_DATA_LENGTH = 22
 
-PACKET_LEN = 1 + 1 + MAX_DATA_LENGTH + 2
+PACKET_CONST_ELEM_LEN = 1 + 1 + 2
+PACKET_LEN = PACKET_CONST_ELEM_LEN + MAX_DATA_LENGTH
 
 class LCDPacket():
     TYPE_RESPONSE = 0b01
@@ -35,6 +37,12 @@ class LCDPacket():
 
     def __str__(self):
         return f"LCDPacket(type={self.type_str()}, command=0x{self.command:02x}, data=[{', '.join(list(map(lambda x: f'0x{x:02x}', self.data)))}])"
+
+@dataclass
+class LCDKeyPollResult():
+    current: list[int]
+    released: list[int]
+    pressed: list[int]
 
 class LCDException(Exception):
     def __init__(self, packet):
@@ -67,6 +75,13 @@ class LCD():
     GPO_LED1_RED = 10
     GPO_LED0_GREEN = 11
     GPO_LED0_RED = 12
+
+    GPO_LEDS = [
+        [GPO_LED0_RED, GPO_LED0_GREEN],
+        [GPO_LED1_RED, GPO_LED1_GREEN],
+        [GPO_LED2_RED, GPO_LED2_GREEN],
+        [GPO_LED3_RED, GPO_LED3_GREEN],
+    ]
 
     def __init__(self, port, baudrate=LCD_BAUDRATE):
         self.port = port
@@ -105,46 +120,58 @@ class LCD():
         self.report_handlers[report].remove(handler)
 
     def ping(self):
-        return self.send(0x00)
+        self.send(0x00)
 
     def version(self):
         return self.send(0x01)
 
-    def write_boot_state(self):
-        return self.send(0x04)
+    def write_user_flash(self, data):
+        return self.send(0x2A, data)
+
+    def read_user_flash(self, data):
+        return self.send(0x2A, data)
+
+    def save_as_default(self):
+        self.send(0x04)
 
     def clear(self):
-        return self.send(0x06)
+        self.send(0x06)
 
     def set_special_character(self, idx, data):
-        return self.send(0x09, [idx] + data)
+        self.send(0x09, [idx] + data)
 
     def set_cursor(self, col, row):
-        return self.send(0x0B, [col, row])
+        self.send(0x0B, [col, row])
 
     def set_cursor_style(self, style):
-        return self.send(0x0C, [style])
+        self.send(0x0C, [style])
 
     def set_contrast(self, level):
-        return self.send(0x0D, [level])
+        self.send(0x0D, [level])
 
     def set_backlight(self, level):
-        return self.send(0x0E, [level])
+        self.send(0x0E, [level])
 
     def set_key_reporting(self, press_mask, release_mask):
-        return self.send(0x17, [press_mask, release_mask])
+        self.send(0x17, [press_mask, release_mask])
 
     def poll_keys(self):
-        return self.send(0x18)
+        res = self.send(0x18)
+        return LCDKeyPollResult(current=res[0], pressed=res[1], released=res[2])
 
     def write(self, col, row, data):
-        return self.send(0x1F, [col, row] + list(bytearray(data, 'ascii')))
+        self.send(0x1F, [col, row] + list(bytearray(data, 'ascii')))
 
     def write_gpio(self, idx, value, drive=-1):
         if drive >= 0:
-            return self.send(0x22, [idx, value, drive])
+            self.send(0x22, [idx, value, drive])
         else:
-            return self.send(0x22, [idx, value])
+            self.send(0x22, [idx, value])
+
+    def write_led(self, idx, red, green):
+        led_gpos = self.GPO_LEDS[idx]
+        self.write_gpio(led_gpos[0], red)
+        self.write_gpio(led_gpos[1], green)
 
     def read_gpio(self, idx):
         return self.send(0x23, [idx])
@@ -182,6 +209,7 @@ class LCD():
     def _check_buffer(self):
         if len(self.buffer) < 4:
             return None
+
         cmd = self.buffer[0]
         data_len = self.buffer[1]
         if data_len > MAX_DATA_LENGTH:
@@ -189,6 +217,7 @@ class LCD():
 
         if len(self.buffer) < data_len + 4:
             return None
+
         crcBytes = self.buffer[2+data_len:4+data_len]
         presentedCrc = crcBytes[0] | (crcBytes[1] << 8)
         calculatedCrc = crc16(self.buffer[:2+data_len])
@@ -201,7 +230,7 @@ class LCD():
 
     def send(self, command, data=[]):
         data_len = len(data)
-        packet = bytearray(1 + 1 + data_len + 2)
+        packet = bytearray(PACKET_CONST_ELEM_LEN + data_len)
         packet[0] = command
         packet[1] = data_len
         for i in range(data_len):
