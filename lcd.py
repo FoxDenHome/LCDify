@@ -25,6 +25,7 @@ class LCDKey(Enum):
     LEFT = 0x08
     RIGHT = 0x10
     DOWN = 0x20
+    INVALID = 0xFFFF
 
 class LCDCursorType(Enum):
     NONE = 0
@@ -79,27 +80,43 @@ class LCDResponseException(LCDException):
         super().__init__(f"LCDResponseException: {packet.data_as_str()}")
         self.packet = packet
 
+REPORT_KEY = 0x00
+REPORT_FAN = 0x01
+REPORT_TEMPERATURE = 0x02
+
+GPO_LED3_GREEN = 5
+GPO_LED3_RED = 6
+GPO_LED2_GREEN = 7
+GPO_LED2_RED = 8
+GPO_LED1_GREEN = 9
+GPO_LED1_RED = 10
+GPO_LED0_GREEN = 11
+GPO_LED0_RED = 12
+
+GPO_LEDS = [
+    (GPO_LED0_RED, GPO_LED0_GREEN),
+    (GPO_LED1_RED, GPO_LED1_GREEN),
+    (GPO_LED2_RED, GPO_LED2_GREEN),
+    (GPO_LED3_RED, GPO_LED3_GREEN),
+]
+
+REPORT_KEY_MAP_TO_LCD_KEY = [
+    (LCDKey.INVALID, False),
+    (LCDKey.UP, True),
+    (LCDKey.DOWN, True),
+    (LCDKey.LEFT, True),
+    (LCDKey.RIGHT, True),
+    (LCDKey.ENTER, True),
+    (LCDKey.CANCEL, True),
+    (LCDKey.UP, False),
+    (LCDKey.DOWN, False),
+    (LCDKey.LEFT, False),
+    (LCDKey.RIGHT, False),
+    (LCDKey.ENTER, False),
+    (LCDKey.CANCEL, False),
+]
+
 class LCD():
-    REPORT_KEY = 0x00
-    REPORT_FAN = 0x01
-    REPORT_TEMPERATURE = 0x02
-
-    GPO_LED3_GREEN = 5
-    GPO_LED3_RED = 6
-    GPO_LED2_GREEN = 7
-    GPO_LED2_RED = 8
-    GPO_LED1_GREEN = 9
-    GPO_LED1_RED = 10
-    GPO_LED0_GREEN = 11
-    GPO_LED0_RED = 12
-
-    GPO_LEDS = [
-        [GPO_LED0_RED, GPO_LED0_GREEN],
-        [GPO_LED1_RED, GPO_LED1_GREEN],
-        [GPO_LED2_RED, GPO_LED2_GREEN],
-        [GPO_LED3_RED, GPO_LED3_GREEN],
-    ]
-
     port: str
     baudrate: int
     _serial: Serial
@@ -191,9 +208,9 @@ class LCD():
             self.send(0x22, [idx, value])
 
     def write_led(self, idx: int, red: int, green: int) -> None:
-        led_gpos = self.GPO_LEDS[idx]
-        self.write_gpio(led_gpos[0], red)
-        self.write_gpio(led_gpos[1], green)
+        gpo_red, gpo_green = GPO_LEDS[idx]
+        self.write_gpio(gpo_red, red)
+        self.write_gpio(gpo_green, green)
 
     def read_gpio(self, idx: int) -> bytearray:
         return self.send(0x23, [idx])
@@ -212,6 +229,8 @@ class LCD():
             print("REQUEST type packet from LCD. This should never happen!")
             return
         if packet.type == LCDPacketType.REPORT:
+            if packet.command == REPORT_KEY:
+                self._handle_key_report(packet.data)
             return
         self._command_lock.acquire()
         self._last_response = packet
@@ -243,6 +262,11 @@ class LCD():
         data = self._buffer[2:2+data_len]
         self._buffer = self._buffer[4+data_len:]
         return LCDPacket(cmd, data)
+
+    def _handle_key_report(self, data: bytearray) -> None:
+        key, pressed = REPORT_KEY_MAP_TO_LCD_KEY[data[0]]
+        for handler in self._key_press_handlers:
+            handler(key, pressed)
 
     def send(self, command: int, data: bytearray = []) -> bytearray:
         data_len = len(data)
