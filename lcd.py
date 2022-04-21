@@ -211,8 +211,8 @@ class LCD():
     def write(self, col: int, row: int, data: str) -> None:
         self.send(0x1F, [col, row] + list(bytearray(data, 'ascii')))
 
-    def write_gpio(self, idx: int, value: int, drive: int = -1) -> None:
-        if drive >= 0:
+    def write_gpio(self, idx: int, value: int, drive: int = None) -> None:
+        if drive is not None:
             self.send(0x22, [idx, value, drive])
         else:
             self.send(0x22, [idx, value])
