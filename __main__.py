@@ -14,3 +14,5 @@ lcd.write_led(0, 100, 100)
 lcd.write_led(1, 100, 100)
 lcd.write_led(2, 100, 100)
 lcd.write_led(3, 100, 100)
+
+print(lcd.read_user_flash())

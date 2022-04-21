@@ -134,8 +134,8 @@ class LCD():
     def write_user_flash(self, data):
         self.send(0x02, data)
 
-    def read_user_flash(self, data):
-        return self.send(0x03, data)
+    def read_user_flash(self):
+        return self.send(0x03)
 
     def save_as_default(self):
         self.send(0x04)
