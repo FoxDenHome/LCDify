@@ -1,0 +1,2 @@
+ID_LEFT = 0x01
+ID_RIGHT = 0x02

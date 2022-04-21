@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from threading import Condition, Thread
 from time import sleep
 from enum import Enum
-from numpy import byte
 from serial import Serial
 from crc import crc16
 
@@ -148,21 +147,19 @@ class LCD():
         self._command_lock = Condition()
         self._buffer = []
         self._reader_thread_var = None
+        self._should_run = False
 
         self._key_press_handlers = []
 
     def open(self) -> None:
         self.close()
         self._serial = Serial(self.port, self.baudrate, timeout=1)
+        self._should_run = True
         self._reader_thread_var = Thread(target=self._reader_thread, daemon=True, name=f"LCD reader {self.port}")
         self._reader_thread_var.start()
 
     def close(self) -> None:
-        if self._serial is None:
-            return
-        self._serial.close()
-        self._serial = None
-        self._buffer = []
+        self._should_run = False
         if self._reader_thread_var is not None:
             self._reader_thread_var.join()
             self._reader_thread_var = None
@@ -231,9 +228,15 @@ class LCD():
         return self.send(0x23, [idx])
 
     def _reader_thread(self) -> None:
-        while self._serial is not None:
+        self._buffer = []
+
+        while self._should_run:
             self._read()
             sleep(0.01)
+    
+        self._serial.close()
+        self._serial = None
+        self._buffer = []
 
     def _read(self) -> None:
         self._buffer += self._serial.read(self._serial.in_waiting)
@@ -307,3 +310,18 @@ class LCD():
             raise LCDResponseException(resp)
     
         return resp.data
+
+class LCDWithID(LCD):
+    def read_id(self) -> int:
+        data = self.read_user_flash()
+        id = data[0]
+        if id == 0xFF or id == 0x00:
+            return None
+        return id
+
+    def write_id(self, id: int):
+        if id <= 0x00 or id >= 0xFF:
+            raise ValueError("ID must be between 0x00 and 0xFF")
+        flash = bytearray(16)
+        flash[0] = id
+        self.write_user_flash(flash)
