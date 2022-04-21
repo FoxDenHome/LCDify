@@ -41,6 +41,7 @@ class LCDDriver(ABC):
         self.lcd.write_led(2, 0, 0)
         self.lcd.write_led(3, 0, 0)
 
+        self.render_init()
         while self._should_run:
             self.render()
             sleep(self._render_period)
@@ -48,6 +49,9 @@ class LCDDriver(ABC):
         self.lcd.close()
 
     @abstractmethod
+    def render_init(self):
+        pass
+
+    @abstractmethod
     def render(self):
-        # Implement this
         pass

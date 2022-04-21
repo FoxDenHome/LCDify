@@ -70,4 +70,7 @@ while True:
         break
 
 for driver in drivers:
-    driver.stop()
+    try:
+        driver.stop()
+    except KeyboardInterrupt:
+        pass
