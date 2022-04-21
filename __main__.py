@@ -9,6 +9,10 @@ def initial_config(lcd: LCD):
     lcd.clear()
     lcd.write(0,0,"FoxDen Industries")
     lcd.set_key_reporting(LCD_KEY_MASK_ALL, LCD_KEY_MASK_ALL)
+    lcd.write_led(0, 0, 0)
+    lcd.write_led(1, 0, 0)
+    lcd.write_led(2, 0, 0)
+    lcd.write_led(3, 0, 0)
     lcd.save_as_default()
 
 lcd.open()
