@@ -19,7 +19,7 @@ class LCDPacket():
     def __init__(self, command, data):
         self.command = command & 0b00111111
         self.type = (command & 0b11000000) >> 6
-        self.data = data
+        self.data = bytearray(data)
 
     def type_str(self):
         if self.type == self.TYPE_RESPONSE:
@@ -129,13 +129,13 @@ class LCD():
         self.send(0x00)
 
     def version(self):
-        return self.send(0x01)
+        return self.send(0x01).decode("ascii")
 
     def write_user_flash(self, data):
-        return self.send(0x2A, data)
+        self.send(0x02, data)
 
     def read_user_flash(self, data):
-        return self.send(0x2A, data)
+        return self.send(0x03, data)
 
     def save_as_default(self):
         self.send(0x04)
