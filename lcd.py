@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from threading import Condition, Thread
 from time import sleep
+from enum import Enum
+from numpy import byte
 from serial import Serial
 from crc import crc16
 
@@ -10,39 +12,66 @@ MAX_DATA_LENGTH = 22
 PACKET_CONST_ELEM_LEN = 1 + 1 + 2
 PACKET_LEN = PACKET_CONST_ELEM_LEN + MAX_DATA_LENGTH
 
+class LCDPacketType(Enum):
+    RESPONSE = 0b01
+    ERROR = 0b11
+    REPORT = 0b10
+    REQUEST = 0b00
+
+class LCDKey(Enum):
+    UP = 0x01
+    ENTER = 0x02
+    CANCEL = 0x04
+    LEFT = 0x08
+    RIGHT = 0x10
+    DOWN = 0x20
+
+class LCDCursorType(Enum):
+    NONE = 0
+    BLINKING_BLOCK = 1
+    SOLID_UNDERSCORE = 2
+    BLINKING_BLOCK_AND_UNDERSCORE = 3
+    BLINKING_UNDERSCORE = 4
+
+class LCDReportType(Enum):
+    KEY = 0x00
+    FAN = 0x01
+    TEMPERATURE = 0x02
+
+@dataclass
+class LCDKeyMask():
+    mask: int
+
+    def has(self, key: LCDKey):
+        return (self.mask & key.value) != 0
+
+    def all(self):
+        return [key for key in LCDKey if self.has(key)]
+
+    def raw(self):
+        return self.mask
+
 class LCDPacket():
-    TYPE_RESPONSE = 0b01
-    TYPE_ERROR = 0b11
-    TYPE_REPORT = 0b10
-    TYPE_REQUEST = 0b00
+    type:  LCDPacketType
+    command: int
+    data: bytearray
 
     def __init__(self, command, data):
         self.command = command & 0b00111111
-        self.type = (command & 0b11000000) >> 6
+        self.type = LCDPacketType((command & 0b11000000) >> 6)
         self.data = bytearray(data)
-
-    def type_str(self):
-        if self.type == self.TYPE_RESPONSE:
-            return 'RESPONSE'
-        elif self.type == self.TYPE_ERROR:
-            return 'ERROR'
-        elif self.type == self.TYPE_REPORT:
-            return 'REPORT'
-        elif self.type == self.TYPE_REQUEST:
-            return 'REQUEST'
-        return 'UNKNOWN'
 
     def data_as_str(self):
         return bytearray(self.data).decode('ascii')
 
     def __str__(self):
-        return f"LCDPacket(type={self.type_str()}, command=0x{self.command:02x}, data=[{', '.join(list(map(lambda x: f'0x{x:02x}', self.data)))}])"
+        return f"LCDPacket(type={self.type.name}, command=0x{self.command:02x}, data=[{', '.join(list(map(lambda x: f'0x{x:02x}', self.data)))}])"
 
 @dataclass
 class LCDKeyPollResult():
-    current: list[int]
-    released: list[int]
-    pressed: list[int]
+    current: LCDKeyMask
+    released: LCDKeyMask
+    pressed: LCDKeyMask
 
 class LCDException(Exception):
     pass
@@ -56,23 +85,6 @@ class LCDResponseException(LCDException):
         self.packet = packet
 
 class LCD():
-    REPORT_KEY = 0x00
-    REPORT_FAN = 0x01
-    REPORT_TEMPERATURE = 0x02
-
-    KEY_UP = 0x01
-    KEY_ENTER = 0x02
-    KEY_CANCEL = 0x04
-    KEY_LEFT = 0x08
-    KEY_RIGHT = 0x10
-    KEY_DOWN = 0x20
-
-    CURSOR_NONE = 0
-    CURSOR_BLINKING_BLOCK = 1
-    CURSOR_SOLID_UNDERSCORE = 2
-    CURSOR_BLINKING_BLOCK_AND_UNDERSCORE = 3
-    CURSOR_BLINKING_UNDERSCORE = 4
-
     GPO_LED3_GREEN = 5
     GPO_LED3_RED = 6
     GPO_LED2_GREEN = 7
@@ -89,7 +101,7 @@ class LCD():
         [GPO_LED3_RED, GPO_LED3_GREEN],
     ]
 
-    def __init__(self, port, baudrate=LCD_BAUDRATE):
+    def __init__(self, port: str, baudrate: int = LCD_BAUDRATE):
         self.port = port
         self.baudrate = baudrate
         self.serial = None
@@ -97,19 +109,17 @@ class LCD():
         self.command_lock = Condition()
         self.buffer = []
         self.reader_thread = None
-        self.report_handlers = {
-            self.REPORT_KEY: [],
-            self.REPORT_FAN: [],
-            self.REPORT_TEMPERATURE: [],
-        }
+        self.report_handlers = {}
+        for report_type in LCDReportType:
+            self.report_handlers[report_type.value] = []
 
-    def open(self):
+    def open(self) -> None:
         self.close()
         self.serial = Serial(self.port, self.baudrate, timeout=1)
         self.reader_thread = Thread(target=self._reader_thread, daemon=True, name=f"LCD reader {self.port}")
         self.reader_thread.start()
 
-    def close(self):
+    def close(self) -> None:
         if self.serial is None:
             return
         self.serial.close()
@@ -119,83 +129,83 @@ class LCD():
             self.reader_thread.join()
             self.reader_thread = None
 
-    def register_handler(self, report, handler):
-        self.report_handlers[report].append(handler)
+    def register_handler(self, report: LCDReportType, handler) -> None:
+        self.report_handlers[report.value].append(handler)
 
-    def unregister_handler(self, report, handler):
-        self.report_handlers[report].remove(handler)
+    def unregister_handler(self, report: LCDReportType, handler) -> None:
+        self.report_handlers[report.value].remove(handler)
 
-    def ping(self):
+    def ping(self) -> None:
         self.send(0x00)
 
-    def version(self):
+    def version(self) -> str:
         return self.send(0x01).decode("ascii")
 
-    def write_user_flash(self, data):
+    def write_user_flash(self, data: bytearray) -> None:
         self.send(0x02, data)
 
-    def read_user_flash(self):
+    def read_user_flash(self) -> bytearray:
         return self.send(0x03)
 
-    def save_as_default(self):
+    def save_as_default(self) -> None:
         self.send(0x04)
 
-    def clear(self):
+    def clear(self) -> None:
         self.send(0x06)
 
-    def set_special_character(self, idx, data):
+    def set_special_character(self, idx: int, data: bytearray) -> None:
         self.send(0x09, [idx] + data)
 
-    def set_cursor(self, col, row):
+    def set_cursor(self, col: int, row: int) -> None:
         self.send(0x0B, [col, row])
 
-    def set_cursor_style(self, style):
-        self.send(0x0C, [style])
+    def set_cursor_style(self, style: LCDCursorType) -> None:
+        self.send(0x0C, [style.value])
 
-    def set_contrast(self, level):
+    def set_contrast(self, level: int) -> None:
         self.send(0x0D, [level])
 
-    def set_backlight(self, level):
+    def set_backlight(self, level: int) -> None:
         self.send(0x0E, [level])
 
-    def set_key_reporting(self, press_mask, release_mask):
+    def set_key_reporting(self, press_mask: LCDKeyMask, release_mask: LCDKeyMask) -> None:
         self.send(0x17, [press_mask, release_mask])
 
-    def poll_keys(self):
+    def poll_keys(self) -> LCDKeyPollResult:
         res = self.send(0x18)
-        return LCDKeyPollResult(current=res[0], pressed=res[1], released=res[2])
+        return LCDKeyPollResult(current=LCDKeyMask(res[0]), pressed=LCDKeyMask(res[1]), released=LCDKeyMask(res[2]))
 
-    def write(self, col, row, data):
+    def write(self, col: int, row: int, data: str) -> None:
         self.send(0x1F, [col, row] + list(bytearray(data, 'ascii')))
 
-    def write_gpio(self, idx, value, drive=-1):
+    def write_gpio(self, idx: int, value: int, drive: int = -1) -> None:
         if drive >= 0:
             self.send(0x22, [idx, value, drive])
         else:
             self.send(0x22, [idx, value])
 
-    def write_led(self, idx, red, green):
+    def write_led(self, idx: int, red: int, green: int) -> None:
         led_gpos = self.GPO_LEDS[idx]
         self.write_gpio(led_gpos[0], red)
         self.write_gpio(led_gpos[1], green)
 
-    def read_gpio(self, idx):
+    def read_gpio(self, idx: int) -> bytearray:
         return self.send(0x23, [idx])
 
-    def _reader_thread(self):
+    def _reader_thread(self) -> None:
         while self.serial is not None:
             self._read()
             sleep(0.01)
 
-    def _read(self):
+    def _read(self) -> None:
         self.buffer += self.serial.read(self.serial.in_waiting)
         packet = self._check_buffer()
         if packet is None:
             return
-        if packet.type == LCDPacket.TYPE_REQUEST:
+        if packet.type == LCDPacketType.REQUEST:
             print("REQUEST type packet from LCD. This should never happen!")
             return
-        if packet.type == LCDPacket.TYPE_REPORT:
+        if packet.type == LCDPacketType.REPORT:
             handlers = self.report_handlers[packet.command]
             if handlers is None:
                 print(f"Unknown report command: {packet.command}")
@@ -208,11 +218,11 @@ class LCD():
         self.command_lock.notify()
         self.command_lock.release()
 
-    def _skip_buffer(self, num=1):
+    def _skip_buffer(self, num: int = 1) -> LCDPacket:
         self.buffer = self.buffer[num:]
         return self._check_buffer()
 
-    def _check_buffer(self):
+    def _check_buffer(self) -> LCDPacket:
         if len(self.buffer) < 4:
             return None
 
@@ -234,7 +244,7 @@ class LCD():
         self.buffer = self.buffer[4+data_len:]
         return LCDPacket(cmd, data)
 
-    def send(self, command, data=[]):
+    def send(self, command: int, data: bytearray = []) -> bytearray:
         data_len = len(data)
         packet = bytearray(PACKET_CONST_ELEM_LEN + data_len)
         packet[0] = command
@@ -254,7 +264,7 @@ class LCD():
         self.last_response = None
         self.command_lock.release()
 
-        if resp.type == LCDPacket.TYPE_ERROR:
+        if resp.type == LCDPacketType.ERROR:
             raise LCDResponseException(resp)
     
         return resp.data
