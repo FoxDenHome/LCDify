@@ -2,6 +2,8 @@ from driver import LCDDriver
 from ids import ID_LEFT
 from prometheus import query_prometheus
 
+ACTIVE_SYMBOL = "\x10" # Arrow right
+
 class LCDDriverLeft(LCDDriver):
     def __init__(self):
         super().__init__(ID_LEFT)
@@ -54,9 +56,9 @@ class LCDDriverLeft(LCDDriver):
         lte_active = " "
         if wan_loss < 90:
             if eth_loss < 90:
-                eth_active = "\x10"
+                eth_active = ACTIVE_SYMBOL
             elif lte_loss < 90:
-                lte_active = "\x10"
+                lte_active = ACTIVE_SYMBOL
 
         self.lcd.write(0, 1, f"{eth_active}")
         self.lcd.write(0, 2, f"{lte_active}")
