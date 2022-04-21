@@ -38,23 +38,23 @@ class LCDCursorType(Enum):
 class LCDKeyMask():
     mask: int
 
-    def has(self, key: LCDKey):
+    def has(self, key: LCDKey) -> bool:
         return (self.mask & key.value) != 0
 
-    def add(self, key: LCDKey):
+    def add(self, key: LCDKey) -> None:
         self.mask |= key.value
 
-    def remove(self, key: LCDKey):
+    def remove(self, key: LCDKey) -> None:
         self.mask &= ~key.value
 
-    def add_all(self):
+    def add_all(self) -> None:
         for key in LCDKey:
             self.add(key)
 
-    def list(self):
+    def list(self) -> list[LCDKey]:
         return [key for key in LCDKey if self.has(key)]
 
-    def raw(self):
+    def raw(self) -> int:
         return self.mask
 
 class LCDPacket():
