@@ -25,7 +25,6 @@ class LCDKey(Enum):
     LEFT = 0x08
     RIGHT = 0x10
     DOWN = 0x20
-    INVALID = 0xFFFF
 
 class LCDCursorType(Enum):
     NONE = 0
@@ -41,21 +40,27 @@ class LCDKeyMask():
     def has(self, key: LCDKey) -> bool:
         return (self.mask & key.value) != 0
 
-    def add(self, key: LCDKey) -> None:
+    def add(self, key: LCDKey) :
         self.mask |= key.value
+        return self
 
-    def remove(self, key: LCDKey) -> None:
+    def remove(self, key: LCDKey):
         self.mask &= ~key.value
+        return self
 
-    def add_all(self) -> None:
+    def add_all(self):
         for key in LCDKey:
             self.add(key)
+        return self
 
     def list(self) -> list[LCDKey]:
         return [key for key in LCDKey if self.has(key)]
 
     def raw(self) -> int:
         return self.mask
+
+LCD_KEY_MASK_NONE = LCDKeyMask(0)
+LCD_KEY_MASK_ALL = LCDKeyMask(0).add_all()
 
 class LCDPacket():
     type:  LCDPacketType
@@ -111,7 +116,7 @@ GPO_LEDS = [
 ]
 
 REPORT_KEY_MAP_TO_LCD_KEY = [
-    (LCDKey.INVALID, False),
+    (None, None),
     (LCDKey.UP, True),
     (LCDKey.DOWN, True),
     (LCDKey.LEFT, True),
@@ -202,7 +207,7 @@ class LCD():
         self.send(0x0E, [level])
 
     def set_key_reporting(self, press_mask: LCDKeyMask, release_mask: LCDKeyMask) -> None:
-        self.send(0x17, [press_mask, release_mask])
+        self.send(0x17, [press_mask.mask, release_mask.mask])
 
     def poll_keys(self) -> LCDKeyPollResult:
         res = self.send(0x18)

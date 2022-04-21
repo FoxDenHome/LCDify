@@ -1,14 +1,23 @@
 from time import sleep
-from lcd import LCD
+from lcd import LCD, LCD_KEY_MASK_ALL
 
 lcd = LCD('COM18')
+
+def initial_config(lcd: LCD):
+    lcd.set_backlight(10)
+    lcd.set_contrast(100)
+    lcd.clear()
+    lcd.write(0,0,"FoxDen Industries")
+    lcd.set_key_reporting(LCD_KEY_MASK_ALL, LCD_KEY_MASK_ALL)
+    lcd.save_as_default()
+
 lcd.open()
 print(lcd.ping())
-print(lcd.set_backlight(10))
-print(lcd.set_contrast(100))
 lcd.clear()
 lcd.write(0,0,"FoxDen Industries")
 print(lcd.version())
+
+initial_config(lcd)
 
 lcd.write_led(0, 100, 100)
 lcd.write_led(1, 100, 100)
