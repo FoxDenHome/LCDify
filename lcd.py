@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from inspect import trace
 from threading import Condition, Thread
 from time import sleep
 from enum import Enum
@@ -256,8 +257,9 @@ class LCD():
         while self._should_run:
             try:
                 self._read()
-            except Exception as e:
-                print("Error reading from LCD", e)
+            except Exception:
+                print(f"Error reading from LCD on port {self.port}")
+                traceback.print_exc()
             self._key_poll_wait.acquire()
             self._key_poll_wait.wait(0.01)
             self._key_poll_wait.release()
@@ -319,7 +321,7 @@ class LCD():
             try:
                 handler(key=key, event=event)
             except Exception:
-                print("Error in key event handler", handler)
+                print(f"Error in key event handler on port {self.port} with handler {handler}")
                 traceback.print_exc()
 
     def send(self, command: int, data: bytearray = []) -> bytearray:
