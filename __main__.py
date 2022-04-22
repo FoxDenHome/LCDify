@@ -1,8 +1,9 @@
 from time import sleep
-from drivers.left import LCDDriverLeft
-from drivers.right import LCDDriverRight
+from config import CONFIG
+from driver import LCDDriver
 from lcd import LCD_KEY_MASK_ALL, LCDWithID
 from serial.tools.list_ports import comports
+from importlib import import_module
 
 def initial_config(lcd: LCDWithID, id: int):
     lcd.open()
@@ -45,21 +46,29 @@ def find_first_free_port():
         return None
     return ports_without_id.pop(0)
 
-drivers = [LCDDriverLeft(), LCDDriverRight()]
+displays_configs = CONFIG["displays"]
 
-for driver in drivers:
-    port = find_port_by_id(driver.id)
+drivers = []
+
+for config in displays_configs:
+    id = config["id"]
+    name = config["name"]
+    port = find_port_by_id(id)
     if port is None:
-        print(f"No port found for driver {driver.id}. Trying to find a free port.")
+        print(f"No port found for display {name} (ID {id}). Trying to find a free port.")
         port = find_first_free_port()
         if port is None:
             print("No free ports found, either!")
             continue
         print(f"Found free port {port}. Writing ID...")
         lcd = LCDWithID(port)
-        initial_config(lcd, driver.id)
+        initial_config(lcd, id)
         print(f"ID written to {port}!")
 
+    driver_config = config["driver"]
+    DriverClass = import_module(f"drivers.{driver_config['type']}", package=".").DRIVER
+    driver: LCDDriver = DriverClass(driver_config)
+    drivers.append(driver)
     driver.set_port(port)
     driver.start()
 

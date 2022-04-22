@@ -38,3 +38,5 @@ class PingRTTLCDPage(LCDPage):
         driver.set_line(1, f"WAN {wan_rtt:3.0f} ms")
         driver.set_line(2, f"ETH {eth_rtt:3.0f} ms")
         driver.set_line(3, f"LTE {lte_rtt:3.0f} ms")
+
+PAGE = PingRTTLCDPage

@@ -40,3 +40,5 @@ class PingPacketLossLCDPage(LCDPage):
         driver.set_line(1, f"WAN {wan_loss:3.0f} %")
         driver.set_line(2, f"ETH {eth_loss:3.0f} %")
         driver.set_line(3, f"LTE {lte_loss:3.0f} %")
+
+PAGE = PingPacketLossLCDPage

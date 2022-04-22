@@ -25,8 +25,7 @@ class LCDDriver(ABC):
     _lcd_mem_set: bytearray
     _lcd_led_states: list[tuple]
 
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, config):
         self.lcd = None
         self._should_run = False
         self._render_period = 1

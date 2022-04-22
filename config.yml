@@ -1,0 +1,11 @@
+displays:
+-   id: 1
+    name: Left
+    driver:
+        type: paged
+        pages: [ping_packet_loss, ping_rtt]
+-   id: 2
+    name: Right
+    driver:
+        type: paged
+        pages: [dummy]
