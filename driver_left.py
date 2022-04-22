@@ -2,13 +2,11 @@ from driver import LCDDriver
 from ids import ID_LEFT
 from prometheus import query_prometheus
 
-ACTIVE_SYMBOL = "\x10" # Arrow right
-
 class LCDDriverLeft(LCDDriver):
     def __init__(self):
         super().__init__(ID_LEFT)
 
-    def _set_loss_led(self, idx: int, loss: int):
+    def _set_loss_led(self, idx: int, loss: float):
         if loss < 5:
             self.lcd.write_led(idx, 0, 10)
         elif loss < 90:
@@ -23,7 +21,7 @@ class LCDDriverLeft(LCDDriver):
         eth_loss = None
         wan_loss = None
         for loss in packet_loss_res["result"]:
-            val = int(loss["value"][1], 10)
+            val = float(loss["value"][1])
             name = loss["metric"]["name"]
 
             if name == "lte":
@@ -33,6 +31,24 @@ class LCDDriverLeft(LCDDriver):
             elif name == "internet":
                 wan_loss = val
 
+        self._set_loss_led(1, wan_loss)
+        self._set_loss_led(2, eth_loss)
+        self._set_loss_led(3, lte_loss)
+        
+        self.lcd.write(0, 0, "=== PACKET  LOSS ===")
+        self.lcd.write(4, 1, f"{wan_loss:3.0f} %")
+        self.lcd.write(4, 2, f"{eth_loss:3.0f} %")
+        self.lcd.write(4, 3, f"{lte_loss:3.0f} %")
+
+    def _set_rtt_led(self, idx: int, rtt: float, warn: float, crit: float):
+        if rtt < warn:
+            self.lcd.write_led(idx, 0, 10)
+        elif rtt < crit:
+            self.lcd.write_led(idx, 5, 10)
+        else:
+            self.lcd.write_led(idx, 10, 0)
+
+    def _render_rtt(self):
         lte_rtt = None
         eth_rtt = None
         wan_rtt = None
@@ -48,29 +64,19 @@ class LCDDriverLeft(LCDDriver):
             elif name == "internet":
                 wan_rtt = val
 
-        self._set_loss_led(0, wan_loss)
-        self._set_loss_led(1, eth_loss)
-        self._set_loss_led(2, lte_loss)
-        
-        eth_active = " "
-        lte_active = " "
-        if wan_loss < 90:
-            if eth_loss < 90:
-                eth_active = ACTIVE_SYMBOL
-            elif lte_loss < 90:
-                lte_active = ACTIVE_SYMBOL
+        self._set_rtt_led(1, wan_rtt, 10, 50)
+        self._set_rtt_led(2, eth_rtt, 10, 50)
+        self._set_rtt_led(3, lte_rtt, 100, 300)
 
-        self.lcd.write(0, 1, f"{eth_active}")
-        self.lcd.write(0, 2, f"{lte_active}")
-
-        self.lcd.write(5, 0, f"{wan_rtt:3.0f}")
-        self.lcd.write(5, 1, f"{eth_rtt:3.0f}")
-        self.lcd.write(5, 2, f"{lte_rtt:3.0f}")
+        self.lcd.write(0, 0, "===== PING RTT =====")
+        self.lcd.write(4, 1, f"{wan_rtt:3.0f} ms")
+        self.lcd.write(4, 2, f"{eth_rtt:3.0f} ms")
+        self.lcd.write(4, 3, f"{lte_rtt:3.0f} ms")
 
     def render_init(self):
-        self.lcd.write(0, 0, "WAN  --- ms")
-        self.lcd.write(0, 1, " ETH --- ms")
-        self.lcd.write(0, 2, " LTE --- ms")
+        self.lcd.write(0, 1, "WAN ")
+        self.lcd.write(0, 2, "ETH ")
+        self.lcd.write(0, 3, "LTE ")
 
     def render(self):
         self._render_loss()

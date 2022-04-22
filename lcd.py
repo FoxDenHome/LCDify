@@ -151,6 +151,12 @@ class LCD():
 
         self._key_press_handlers = []
 
+    def width(self) -> int:
+        return 20
+
+    def height(self) -> int:
+        return 4
+
     def open(self) -> None:
         self.close()
         self._serial = Serial(self.port, self.baudrate, timeout=1)
