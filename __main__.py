@@ -25,7 +25,7 @@ ports = comports()
 ports_by_id = {}
 ports_without_id = []
 for port in ports:
-    if 'CFA635-USB' not in port.description:
+    if "CFA635-USB" not in port.description:
         continue
     lcd = LCDWithID(port.device)
     lcd.open()

@@ -38,7 +38,7 @@ class LCDDriver(ABC):
 
     def start(self):
         self._should_run = True
-        self._render_thread = Thread(name=f'LCD render {self._lcd.port}', target=self._loop)
+        self._render_thread = Thread(name=f"LCD render {self._lcd.port}", target=self._loop)
         self._render_thread.start()
 
     def stop(self):

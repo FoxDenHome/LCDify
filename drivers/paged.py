@@ -10,7 +10,6 @@ class PagedLCDDriver(LCDDriver):
     last_cycle_time: datetime
 
     def __init__(self, config):
-        # pages: list[LCDPage]
         super().__init__(config)
         auto_cycle_time = 5
         if "auto_cycle_time" in config:
