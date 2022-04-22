@@ -157,6 +157,9 @@ class LCD():
     def height(self) -> int:
         return 4
 
+    def led_count(self) -> int:
+        return 4
+
     def open(self) -> None:
         self.close()
         self._serial = Serial(self.port, self.baudrate, timeout=1)
@@ -216,8 +219,11 @@ class LCD():
         res = self.send(0x18)
         return LCDKeyPollResult(current=LCDKeyMask(res[0]), pressed=LCDKeyMask(res[1]), released=LCDKeyMask(res[2]))
 
-    def write(self, col: int, row: int, data: str) -> None:
-        self.send(0x1F, [col, row] + list(bytearray(data, 'ascii')))
+    def write_str(self, col: int, row: int, data: str) -> None:
+        self.write(bytearray(data, 'ascii'))
+
+    def write(self, col: int, row: int, data: bytearray) -> None:
+        self.send(0x1F, [col, row] + list(data))
 
     def write_gpio(self, idx: int, value: int, drive: int = None) -> None:
         if drive is not None:
