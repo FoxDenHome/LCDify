@@ -1,4 +1,4 @@
-from driver import PagedLCDDriver
+from driver_paged import PagedLCDDriver
 from ids import ID_RIGHT
 from pages.dummy import DummyLCDPage
 

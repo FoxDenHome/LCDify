@@ -1,7 +1,4 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from driver import LCDDriver
+from driver import LCDDriver
 
 def format_title(title: str, width: int) -> str:
     title_len = len(title)
