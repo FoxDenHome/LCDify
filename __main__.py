@@ -67,7 +67,7 @@ for config in displays_configs:
 
     driver_config = config["driver"]
     DriverClass = import_module(f"drivers.{driver_config['type']}", package=".").DRIVER
-    driver: LCDDriver = DriverClass(driver_config)
+    driver: LCDDriver = DriverClass(config=driver_config)
     drivers.append(driver)
     driver.set_port(port)
     driver.start()

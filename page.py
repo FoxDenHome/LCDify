@@ -23,8 +23,10 @@ def format_title(title: str, width: int) -> str:
     return f"{'=' * equal_signs}{title}{'=' * equal_signs}"
 
 class LCDPage():
-    def __init__(self, title: str):
-        self.title = title
+    def __init__(self, config, default_title: str = "UNTITLED"):
+        self.title = default_title
+        if "title" in config:
+            self.title = config["title"]
 
     def render(self, driver: LCDDriver) -> None:
         driver.set_line(0, format_title(self.title, driver.lcd_width))

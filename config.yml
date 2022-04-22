@@ -3,9 +3,12 @@ displays:
     name: Left
     driver:
         type: paged
-        pages: [ping_packet_loss, ping_rtt]
+        pages:
+            -   type: ping_packet_loss
+            -   type: ping_rtt
 -   id: 2
     name: Right
     driver:
         type: paged
-        pages: [dummy]
+        pages:
+            -   type: dummy

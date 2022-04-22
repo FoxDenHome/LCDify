@@ -3,8 +3,8 @@ from page import LCDPage
 from prometheus import query_prometheus
 
 class PingPacketLossLCDPage(LCDPage):
-    def __init__(self):
-        super().__init__("PACKET LOSS")
+    def __init__(self, config):
+        super().__init__(config, "PACKET LOSS")
 
     def _set_loss_led(self, driver: LCDDriver, idx: int, loss: float):
         if loss < 5:

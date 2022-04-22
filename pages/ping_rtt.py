@@ -3,8 +3,8 @@ from page import LCDPage
 from prometheus import query_prometheus
 
 class PingRTTLCDPage(LCDPage):
-    def __init__(self):
-        super().__init__("PING RTT")
+    def __init__(self, config):
+        super().__init__(config, "PING RTT")
 
     def _set_rtt_led(self, driver: LCDDriver, idx: int, rtt: float, warn: float, crit: float):
         if rtt < warn:

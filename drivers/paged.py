@@ -16,11 +16,11 @@ class PagedLCDDriver(LCDDriver):
         if "auto_cycle_time" in config:
             auto_cycle_time = config["auto_cycle_time"]
 
-        page_types = config["pages"]
+        pages = config["pages"]
         self.pages = []
-        for page_type in page_types:
-            PageClass = import_module(f"pages.{page_type}", package=".").PAGE
-            self.pages.append(PageClass())
+        for config in pages:
+            PageClass = import_module(f"pages.{config['type']}", package=".").PAGE
+            self.pages.append(PageClass(config=config))
 
         self.current_page = 0
 
