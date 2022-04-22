@@ -9,17 +9,21 @@ class Transition(ABC):
     start_time: datetime
     running: bool
     progress: float
+    width: int
+    height: int
 
     def __init__(self, config):
         self.period = 1
         self.progress = 0
         self.running = False
 
-    def start(self, from_data: bytearray, to_data: bytearray):
+    def start(self, from_data: bytearray, to_data: bytearray, width: int, height: int):
         self.from_data = from_data
         self.to_data = to_data
         self.data = from_data.copy()
         self.start_time = datetime.now()
+        self.width = width
+        self.height = height
         self.progress = 0
         self.running = True
 

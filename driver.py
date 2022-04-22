@@ -77,7 +77,7 @@ class LCDDriver(ABC):
 
     def do_render(self, transition=False):
         if transition:
-            self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set)
+            self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set, width=self.lcd_width, height=self.lcd_height)
 
         self._render_wait.acquire()
         self._render_wait.notify()
