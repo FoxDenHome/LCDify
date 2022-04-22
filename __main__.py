@@ -1,6 +1,6 @@
 from time import sleep
-from driver_left import LCDDriverLeft
-from driver_right import LCDDriverRight
+from drivers.left import LCDDriverLeft
+from drivers.right import LCDDriverRight
 from lcd import LCD_KEY_MASK_ALL, LCDWithID
 from serial.tools.list_ports import comports
 

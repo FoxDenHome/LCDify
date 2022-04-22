@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
 from threading import Thread
 from lcd import LCD
 from time import sleep
+
+from page import LCDPage
 
 DEFAULT_CHAR = ord(" ")
 MIN_SPACING_BETWEEN_DIFFS = 5
@@ -84,6 +87,10 @@ class LCDDriver(ABC):
         self._lcd.write_led(idx, red, green)
         self._lcd_led_states[idx] = (red, green)
 
+    def clear(self) -> None:
+        for i in range(self.lcd_pixel_count):
+            self._lcd_mem_set[i] = DEFAULT_CHAR
+
     def write_at(self, col: int, row: int, content: str) -> None:
         content_bytes = content.encode("ascii")
         for i, c in enumerate(content_bytes):
@@ -131,10 +138,40 @@ class LCDDriver(ABC):
 
         self._lcd_mem_is = self._lcd_mem_set.copy()
 
-    @abstractmethod
     def render_init(self):
         pass
 
     @abstractmethod
     def render(self):
         pass
+
+class PagedLCDDriver(LCDDriver):
+    current_page: int
+    pages: list[LCDPage]
+    auto_cycle_time: timedelta
+    last_cycle_time: datetime
+
+    def __init__(self, id, pages: list[LCDPage], auto_cycle_time: int = 5):
+        super().__init__(id)
+        self.pages = pages.copy()
+        self.current_page = 0
+        self.auto_cycle_time = timedelta(seconds=auto_cycle_time)
+        self.last_cycle_time = datetime.now()
+
+    def next_page(self):
+        self.current_page += 1
+        if self.current_page >= len(self.pages):
+            self.current_page = 0
+
+    def previous_page(self):
+        if self.current_page <= 0:
+            self.current_page = len(self.pages) - 1
+        else:
+            self.current_page -= 1
+
+    def render(self):
+        now = datetime.now()
+        if now - self.last_cycle_time > self.auto_cycle_time:
+            self.next_page()
+            self.last_cycle_time = now
+        self.pages[self.current_page].render(self)

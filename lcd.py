@@ -243,7 +243,10 @@ class LCD():
         self._buffer = []
 
         while self._should_run:
-            self._read()
+            try:
+                self._read()
+            except Exception as e:
+                print(f"Error reading from LCD: {e}")
             sleep(0.01)
     
         self._serial.close()
