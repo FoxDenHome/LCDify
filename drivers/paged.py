@@ -1,6 +1,7 @@
 from importlib import import_module
 from driver import LCDDriver
 from datetime import timedelta, datetime
+from lcd import LCDKey
 from page import LCDPage
 
 class PagedLCDDriver(LCDDriver):
@@ -28,6 +29,13 @@ class PagedLCDDriver(LCDDriver):
         else:
             self.auto_cycle_time = None
         self.last_cycle_time = datetime.now()
+
+    def on_key_press(self, key: LCDKey):
+        if key == LCDKey.DOWN:
+            self.next_page()
+        elif key == LCDKey.UP:
+            self.previous_page()
+        self.do_render()
 
     def set_page(self, page: int):
         self.last_cycle_time = datetime.now()

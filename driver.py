@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
-from threading import Thread
-from lcd import LCD
-from time import sleep
+from threading import Thread, Condition
+from lcd import LCD, LCDKey, LCDKeyEvent
 
 DEFAULT_CHAR = ord(" ")
 MIN_SPACING_BETWEEN_DIFFS = 5
@@ -24,6 +23,7 @@ class LCDDriver(ABC):
     _lcd_mem_is: bytearray
     _lcd_mem_set: bytearray
     _lcd_led_states: list[tuple]
+    _render_wait: Condition
 
     def __init__(self, config):
         self.lcd = None
@@ -31,10 +31,12 @@ class LCDDriver(ABC):
         self._render_period = 1
         self._render_thread = None
         self._lines = []
+        self._render_wait = Condition()
 
     def set_port(self, port):
         self.stop()
         self._lcd = LCD(port)
+        self._lcd.register_key_event_handler(self._key_event_handler)
 
     def start(self):
         self._should_run = True
@@ -45,8 +47,30 @@ class LCDDriver(ABC):
         self._should_run = False
 
         if self._render_thread is not None:
+            self.do_render()
             self._render_thread.join()
             self._render_thread = None
+
+    def _key_event_handler(self, key: LCDKey, event: LCDKeyEvent):
+        if event == LCDKeyEvent.PRESSED:
+            self.on_key_down(key=key)
+            self.on_key_press(key=key)
+        elif event == LCDKeyEvent.RELEASED:
+            self.on_key_up(key=key)
+
+    def on_key_down(self, key: LCDKey):
+        pass
+
+    def on_key_up(self, key: LCDKey):
+        pass
+
+    def on_key_press(self, key: LCDKey):
+        pass
+
+    def do_render(self):
+        self._render_wait.acquire()
+        self._render_wait.notify()
+        self._render_wait.release()
 
     def _loop(self):
         self._lcd.open()
@@ -72,7 +96,9 @@ class LCDDriver(ABC):
         while self._should_run:
             self.render()
             self._render_send_display()
-            sleep(self._render_period)
+            self._render_wait.acquire()
+            self._render_wait.wait(self._render_period)
+            self._render_wait.release()
 
         self._lcd.close()
 

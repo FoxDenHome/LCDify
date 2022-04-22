@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from threading import Condition, Thread
 from time import sleep
 from enum import Enum
+import traceback
+from types import TracebackType
 from serial import Serial
 from crc import crc16
 
@@ -24,6 +26,10 @@ class LCDKey(Enum):
     LEFT = 0x08
     RIGHT = 0x10
     DOWN = 0x20
+
+class LCDKeyEvent(Enum):
+    PRESSED = 0
+    RELEASED = 1
 
 class LCDCursorType(Enum):
     NONE = 0
@@ -138,6 +144,7 @@ class LCD():
     _command_lock: Condition
     _buffer: list[int]
     _reader_thread_var: Thread
+    _key_poll_wait: Condition
 
     def __init__(self, port: str, baudrate: int = LCD_BAUDRATE):
         self.port = port
@@ -148,8 +155,9 @@ class LCD():
         self._buffer = []
         self._reader_thread_var = None
         self._should_run = False
+        self._key_poll_wait = Condition()
 
-        self._key_press_handlers = []
+        self._key_event_handlers = []
 
     def width(self) -> int:
         return 20
@@ -170,14 +178,17 @@ class LCD():
     def close(self) -> None:
         self._should_run = False
         if self._reader_thread_var is not None:
+            self._key_poll_wait.acquire()
+            self._key_poll_wait.notify()
+            self._key_poll_wait.release()
             self._reader_thread_var.join()
             self._reader_thread_var = None
 
-    def register_key_press_handler(self, handler) -> None:
-        self._key_press_handlers.append(handler)
+    def register_key_event_handler(self, handler) -> None:
+        self._key_event_handlers.append(handler)
 
-    def unregister_key_press_handler(self, handler) -> None:
-        self._key_press_handlers.remove(handler)
+    def unregister_key_event_handler(self, handler) -> None:
+        self._key_event_handlers.remove(handler)
 
     def ping(self) -> None:
         self.send(0x00)
@@ -220,7 +231,7 @@ class LCD():
         return LCDKeyPollResult(current=LCDKeyMask(res[0]), pressed=LCDKeyMask(res[1]), released=LCDKeyMask(res[2]))
 
     def write_str(self, col: int, row: int, data: str) -> None:
-        self.write(bytearray(data, "ascii"))
+        self.write(col, row, bytearray(data, "ascii"))
 
     def write(self, col: int, row: int, data: bytearray) -> None:
         self.send(0x1F, [col, row] + list(data))
@@ -246,8 +257,10 @@ class LCD():
             try:
                 self._read()
             except Exception as e:
-                print(f"Error reading from LCD: {e}")
-            sleep(0.01)
+                print("Error reading from LCD", e)
+            self._key_poll_wait.acquire()
+            self._key_poll_wait.wait(0.01)
+            self._key_poll_wait.release()
     
         self._serial.close()
         self._serial = None
@@ -298,8 +311,16 @@ class LCD():
 
     def _handle_key_report(self, data: bytearray) -> None:
         key, pressed = REPORT_KEY_MAP_TO_LCD_KEY[data[0]]
-        for handler in self._key_press_handlers:
-            handler(key, pressed)
+        for handler in self._key_event_handlers:
+            if pressed:
+                event = LCDKeyEvent.PRESSED
+            else:
+                event = LCDKeyEvent.RELEASED
+            try:
+                handler(key=key, event=event)
+            except Exception:
+                print("Error in key event handler", handler)
+                traceback.print_exc()
 
     def send(self, command: int, data: bytearray = []) -> bytearray:
         data_len = len(data)

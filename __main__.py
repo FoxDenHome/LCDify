@@ -74,7 +74,7 @@ for config in displays_configs:
 
 while True:
     try:
-        sleep(1)
+        sleep(0.1)
     except KeyboardInterrupt:
         break
 
