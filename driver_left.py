@@ -65,14 +65,12 @@ class LCDDriverLeft(LCDDriver):
             elif name == "internet":
                 wan_rtt = val
 
-        wan_rtt = random() * 666
-
         self._set_rtt_led(1, wan_rtt, 10, 50)
         self._set_rtt_led(2, eth_rtt, 10, 50)
         self._set_rtt_led(3, lte_rtt, 100, 300)
 
         self.set_line(0, "===== PING RTT =====")
-        self.set_line(1, f"WAN {wan_rtt:3.0f} ms  {wan_rtt:3.0f}")
+        self.set_line(1, f"WAN {wan_rtt:3.0f} ms")
         self.set_line(2, f"ETH {eth_rtt:3.0f} ms")
         self.set_line(3, f"LTE {lte_rtt:3.0f} ms")
 
