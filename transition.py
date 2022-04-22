@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from numpy import byte
+
 class LCDTransition(ABC):
     from_data: bytearray
     to_data: bytearray
@@ -31,6 +33,13 @@ class LCDTransition(ABC):
         self.progress = 0
         self.running = True
         self.on_start()
+
+    def update_target(self, to_data: byte):
+        self.to_data = to_data
+        self.on_update_target()
+
+    def on_update_target(self) -> None:
+        pass
 
     def stop(self):
         self.running = False

@@ -10,6 +10,9 @@ class PrinterLCDTransition(LCDTransition):
     def on_start(self):
         self.set_up_to = 0
 
+    def on_update_target(self):
+        self.set_up_to = 0
+
     def render(self) -> bool:
         if not super().render():
             return False

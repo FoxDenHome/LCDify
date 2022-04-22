@@ -30,6 +30,16 @@ class PagedLCDDriver(LCDDriver):
             self.auto_cycle_time = None
         self.last_cycle_time = datetime.now()
 
+    def start(self):
+        super().start()
+        for page in self.pages:
+            page.start()
+
+    def stop(self):
+        super().stop()
+        for page in self.pages:
+            page.stop()
+
     def on_key_press(self, key: LCDKey):
         if key == LCDKey.DOWN:
             self.next_page()
