@@ -313,7 +313,6 @@ class LCD():
         self._serial.write(packet)
         if not self._command_lock.wait_for(lambda: self._last_response and self._last_response.command == command, timeout=0.25):
             raise LCDTimeoutException()
-
         resp = self._last_response
         self._last_response = None
         self._command_lock.release()

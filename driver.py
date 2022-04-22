@@ -4,6 +4,10 @@ from lcd import LCD
 from time import sleep
 
 DEFAULT_CHAR = ord(" ")
+MIN_SPACING_BETWEEN_DIFFS = 5
+CHANGE_MAX_LEN = 20
+
+_MIN_SPACING_VAR = MIN_SPACING_BETWEEN_DIFFS - 1
 
 class LCDDriver(ABC):
     id: int
@@ -68,6 +72,7 @@ class LCDDriver(ABC):
         self.render_init()
         while self._should_run:
             self.render()
+            self._render_send_display()
             sleep(self._render_period)
 
         self._lcd.close()
@@ -83,7 +88,6 @@ class LCDDriver(ABC):
         content_bytes = content.encode("ascii")
         for i, c in enumerate(content_bytes):
             self._lcd_mem_set[(row * self.lcd_width) + col + i] = c
-        self._render_send_display()
 
     def set_line(self, idx: int, content: str) -> None:
         content_len = len(content)
@@ -103,12 +107,16 @@ class LCDDriver(ABC):
             if diff:
                 if change_start < 0:
                     change_start = i
+                elif i - change_start >= CHANGE_MAX_LEN:
+                    changes.append((change_start, i))
+                    change_start = i
                 elif change_end >= 0:
                     change_end = -1
             elif change_start >= 0:
                 if change_end < 0:
                     change_end = i
-                elif i - change_end > 5:
+                
+                if i - change_end >= _MIN_SPACING_VAR:
                     changes.append((change_start, change_end))
                     change_start = -1
                     change_end = -1
