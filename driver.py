@@ -29,6 +29,8 @@ class LCDDriver(ABC):
         self.lcd = None
         self._should_run = False
         self._render_period = 1
+        if "render_period" in config:
+            self._render_period = config["render_period"]
         self._render_thread = None
         self._lines = []
         self._render_wait = Condition()
