@@ -106,9 +106,10 @@ class LCDDriver(ABC):
         self.render_init()
         while self._should_run:
             in_transition = self._transition.running
-            if in_transition:
-                data = self._transition.render()
+            if in_transition and self._transition.render():
+                data = self._transition.data
             else:
+                in_transition = False
                 self.render()
                 data = self._lcd_mem_set
 
