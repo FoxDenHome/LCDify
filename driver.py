@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+from importlib import import_module
 from threading import Thread, Condition
 from lcd import LCD, LCDKey, LCDKeyEvent
-from transition import Transition
-from transitions.none import NoneTransision
+from transition import LCDTransition
+from transitions.none import NoneLCDTransition
 
 DEFAULT_CHAR = ord(" ")
 MIN_SPACING_BETWEEN_DIFFS = 5
@@ -28,7 +29,9 @@ class LCDDriver(ABC):
     _lcd_mem_set: bytearray
     _lcd_led_states: list[tuple]
     _render_wait: Condition
-    _transition: Transition
+    _transition: LCDTransition
+    _transition_start: bool
+    _transition_cancel: bool
 
     def __init__(self, config):
         self.lcd = None
@@ -39,7 +42,13 @@ class LCDDriver(ABC):
         self._render_thread = None
         self._lines = []
         self._render_wait = Condition()
-        self._transition = NoneTransision(config={})
+
+        if "transition" in config:
+            transition_config = config["transition"]
+            TransitionClass = import_module(f"transitions.{transition_config['type']}", package=".").TRANSITION
+            self._transition = TransitionClass(config=transition_config)
+        else:
+            self._transition = NoneLCDTransition(config={})
 
     def set_port(self, port):
         self.stop()
@@ -75,15 +84,21 @@ class LCDDriver(ABC):
     def on_key_press(self, key: LCDKey):
         pass
 
-    def do_render(self, transition=False):
-        if transition:
-            self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set, width=self.lcd_width, height=self.lcd_height)
+    def start_transition(self):
+        self._transition_start = True
 
+    def cancel_transition(self):
+        self._transition_cancel = True
+
+    def do_render(self):
         self._render_wait.acquire()
         self._render_wait.notify()
         self._render_wait.release()
 
     def _loop(self):
+        self._transition_start = False
+        self._transition_cancel = False
+
         self._lcd.open()
 
         self.lcd_width = self._lcd.width()
@@ -105,13 +120,22 @@ class LCDDriver(ABC):
 
         self.render_init()
         while self._should_run:
+            if self._transition_cancel:
+                self._transition_start = False
+                self._transition.stop()
+                self._transition_cancel = False
+            elif self._transition_start:
+                self.render()
+                self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set, width=self.lcd_width, height=self.lcd_height)
+                self._transition_start = False
+
             in_transition = self._transition.running
             if in_transition and self._transition.render():
                 data = self._transition.data
             else:
-                in_transition = False
                 self.render()
                 data = self._lcd_mem_set
+                in_transition = False
 
             self._render_send_display(data)
 

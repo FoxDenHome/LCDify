@@ -1,7 +1,8 @@
-from transition import Transition
+from transition import LCDTransition
 
-
-class NoneTransision(Transition):
+class NoneLCDTransition(LCDTransition):
     def render(self) -> bool:
         self.running = False
         return False
+
+TRANSITION = NoneLCDTransition

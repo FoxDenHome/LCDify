@@ -35,7 +35,8 @@ class PagedLCDDriver(LCDDriver):
             self.next_page()
         elif key == LCDKey.UP:
             self.previous_page()
-        self.do_render(transition=True)
+        self.start_transition()
+        self.do_render()
 
     def set_page(self, page: int):
         self.last_cycle_time = datetime.now()

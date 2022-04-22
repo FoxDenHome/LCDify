@@ -6,6 +6,8 @@ displays:
         pages:
             -   type: ping_packet_loss
             -   type: ping_rtt
+        transition:
+            type: none
 -   id: 2
     name: Right
     driver:

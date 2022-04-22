@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-class Transition(ABC):
+class LCDTransition(ABC):
     from_data: bytearray
     to_data: bytearray
     data: bytearray
@@ -11,10 +11,13 @@ class Transition(ABC):
     progress: float
     width: int
     height: int
+    pixels: int
 
     def __init__(self, config):
         self.period = 1
-        self.progress = 0
+        if "period" in config:
+            self.period = config["period"]
+        self.progress = 1
         self.running = False
 
     def start(self, from_data: bytearray, to_data: bytearray, width: int, height: int):
@@ -24,16 +27,24 @@ class Transition(ABC):
         self.start_time = datetime.now()
         self.width = width
         self.height = height
+        self.pixels = width * height
         self.progress = 0
         self.running = True
+        self.on_start()
 
-    def progress(self) -> float:
-        return
+    def stop(self):
+        self.running = False
+        self.progress = 1
+        self.data = self.to_data.copy()
+
+    def on_start(self) -> None:
+        pass
 
     @abstractmethod
     def render(self) -> bool:
-        self.progess = (datetime.now() - self.start_time).total_seconds() / self.period
+        self.progress = (datetime.now() - self.start_time).total_seconds() / self.period
         if self.progress >= 1:
             self.running = False
             return False
+        
         return True
