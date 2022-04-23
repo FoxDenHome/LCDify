@@ -59,8 +59,6 @@ for config in displays_configs:
     id = config["id"]
     name = config["name"]
     port, version = find_port_by_id(id)
-    if version != LCD_INITIAL_CONFIG_VERSION:
-        initial_config(LCDWithID(port), id)
 
     if port is None:
         print(f"No port found for display {name} (ID {id}). Trying to find a free port.")
@@ -71,7 +69,11 @@ for config in displays_configs:
         print(f"Found free port {port}. Writing ID...")
         lcd = LCDWithID(port)
         initial_config(lcd, id)
+        version = LCD_INITIAL_CONFIG_VERSION
         print(f"ID written to {port}!")
+
+    if version != LCD_INITIAL_CONFIG_VERSION:
+        initial_config(LCDWithID(port), id)
 
     driver_config = config["driver"]
     DriverClass = import_module(f"drivers.{driver_config['type']}", package=".").DRIVER
