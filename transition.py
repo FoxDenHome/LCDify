@@ -13,7 +13,7 @@ class LCDTransition(ABC):
     progress: float
     width: int
     height: int
-    pixels: int
+    pixel_count: int
 
     def __init__(self, config):
         self.period = 1
@@ -29,7 +29,7 @@ class LCDTransition(ABC):
         self.start_time = datetime.now()
         self.width = width
         self.height = height
-        self.pixels = width * height
+        self.pixel_count = width * height
         self.progress = 0
         self.running = True
         self.on_start()

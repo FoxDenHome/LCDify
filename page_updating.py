@@ -1,3 +1,4 @@
+from lib2to3.pgen2.driver import Driver
 from threading import Condition, Thread
 from page import LCDPage
 
@@ -6,8 +7,8 @@ class UpdatingLCDPage(LCDPage):
     _update_wait: Condition
     _update_thread: Thread
 
-    def __init__(self, config, title = None):
-        super().__init__(config, title)
+    def __init__(self, config, driver: Driver, default_title: str = None):
+        super().__init__(config, driver, default_title)
 
         self.update_period = 30
         if "update_period" in config:

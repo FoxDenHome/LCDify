@@ -42,6 +42,10 @@ class LCDDriver(ABC):
         self._render_thread = None
         self._lines = []
         self._render_wait = Condition()
+        self.lcd_width = 0
+        self.lcd_height = 0
+        self.lcd_pixel_count = 0
+        self._lcd = None
 
         if "transition" in config:
             transition_config = config["transition"]
@@ -56,6 +60,10 @@ class LCDDriver(ABC):
         self._lcd.register_key_event_handler(self._key_event_handler)
 
     def start(self):
+        self._lcd.open()
+        self.lcd_width = self._lcd.width()
+        self.lcd_height = self._lcd.height()
+        self.lcd_led_count = self._lcd.led_count()
         self._should_run = True
         self._render_thread = Thread(name=f"LCD render {self._lcd.port}", target=self._loop)
         self._render_thread.start()
@@ -67,6 +75,9 @@ class LCDDriver(ABC):
             self.do_render()
             self._render_thread.join()
             self._render_thread = None
+
+        if self._lcd is not None:
+            self._lcd.close()
 
     def _key_event_handler(self, key: LCDKey, event: LCDKeyEvent):
         if event == LCDKeyEvent.PRESSED:
@@ -98,12 +109,6 @@ class LCDDriver(ABC):
     def _loop(self):
         self._transition_start = False
         self._transition_cancel = False
-
-        self._lcd.open()
-
-        self.lcd_width = self._lcd.width()
-        self.lcd_height = self._lcd.height()
-        self.lcd_led_count = self._lcd.led_count()
 
         self._lcd.clear()
 

@@ -20,7 +20,7 @@ class PagedLCDDriver(LCDDriver):
         self.pages = []
         for config in pages:
             PageClass = import_module(f"pages.{config['type']}", package=".").PAGE
-            self.pages.append(PageClass(config=config))
+            self.pages.append(PageClass(driver=self, config=config))
 
         self.current_page = 0
 
@@ -41,10 +41,12 @@ class PagedLCDDriver(LCDDriver):
             page.stop()
 
     def on_key_press(self, key: LCDKey):
-        if key == LCDKey.DOWN:
+        if key == LCDKey.RIGHT:
             self.next_page()
-        elif key == LCDKey.UP:
+        elif key == LCDKey.LEFT:
             self.previous_page()
+        else:
+            return
         self.start_transition()
         self.do_render()
 
@@ -61,6 +63,6 @@ class PagedLCDDriver(LCDDriver):
     def render(self):
         if self.auto_cycle_time is not None and datetime.now() - self.last_cycle_time > self.auto_cycle_time:
             self.next_page()
-        self.pages[self.current_page].render(self)
+        self.pages[self.current_page].render()
 
 DRIVER = PagedLCDDriver

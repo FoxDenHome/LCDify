@@ -1,41 +1,65 @@
 from driver import LCDDriver
 
-def format_title(title: str, width: int) -> str:
-    title_len = len(title)
-    if title_len > width:
-        raise ValueError("Title too long")
-    
-    if title_len == width:
-        return title
-    
-    if title_len == width - 1:
-        return f"{title} "
-
-    title = f" {title} "
-    title_len = len(title)
-    if title_len == width:
-        return title
-
-    width_diff = width - title_len
-    equal_signs = width_diff // 2
-    if width_diff % 2:
-        title = f" {title}"
-    return f"{'=' * equal_signs}{title}{'=' * equal_signs}"
-
 class LCDPage():
     should_run: bool
+    driver: LCDDriver
+    formatted_title: str
+    title: str
 
-    def __init__(self, config, default_title: str = "UNTITLED"):
+    def __init__(self, config, driver: LCDDriver, default_title: str = "UNTITLED"):
+        self.driver = driver
         self.title = default_title
         if "title" in config:
             self.title = config["title"]
         self.should_run = False
+        self.formatted_title = None
 
     def start(self):
         self.should_run = True
+        self.formatted_title = self.format_text_center(self.title, "=")
 
     def stop(self):
         self.should_run = False
 
-    def render(self, driver: LCDDriver) -> None:
-        driver.set_line(0, format_title(self.title, driver.lcd_width))
+    def render(self) -> None:
+        self.driver.set_line(0, self.formatted_title)
+
+    def format_text_center(self, text: str, pad_char: str) -> str:
+        text_len = len(text)
+        if text_len > self.driver.lcd_width:
+            raise ValueError("Title too long")
+        
+        if text_len == self.driver.lcd_width:
+            return text
+
+        if (text_len % 2) != (self.driver.lcd_width % 2):
+            if " " in text:
+                center_space = -1
+                center_idx = text_len / 2
+                center_offset = 0.5
+                while center_offset < text_len:
+                    idx = round(center_idx + center_offset)
+                    if text[idx] == " ":
+                        center_space = idx
+                        break
+                    idx = center_idx - center_offset
+                    if text[idx] == " ":
+                        center_space = idx
+                        break
+                    center_offset += 1
+                assert(center_space >= 0)
+                text = text[:center_space] + " " + text[center_space:]
+            else:
+                text = f"{text} "
+
+        text_len = len(text)
+        if text_len == self.driver.lcd_width:
+            return text
+
+        text = f" {text} "
+        text_len = len(text)
+        if text_len == self.driver.lcd_width:
+            return text
+
+        equal_signs = (self.driver.lcd_width - text_len) // 2
+        return f"{pad_char * equal_signs}{text}{pad_char * equal_signs}"
