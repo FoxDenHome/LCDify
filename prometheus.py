@@ -1,6 +1,6 @@
 from requests import get
 
-PROMETHEUS_URL = "http://prometheus.foxden.network:9090/api/v1/query"
+PROMETHEUS_URL = "http://prometheus:9090/api/v1/query"
 
 def query_prometheus(query):
     res = get(PROMETHEUS_URL, params={"query": query}).json()
