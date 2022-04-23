@@ -133,7 +133,7 @@ class LCDDriver(ABC):
                 self._transition_cancel = False
             elif self._transition_start:
                 self.render()
-                self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set, width=self.lcd_width, height=self.lcd_height)
+                self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set, from_leds=self._lcd_led_is, to_leds=self._lcd_led_set, width=self.lcd_width, height=self.lcd_height)
                 self._transition_start = False
 
             in_transition = self._transition.running
