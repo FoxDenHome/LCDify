@@ -27,7 +27,8 @@ class LCDDriver(ABC):
     _lines: list[str]
     _lcd_mem_is: bytearray
     _lcd_mem_set: bytearray
-    _lcd_led_states: list[tuple]
+    _lcd_led_is: list[tuple[int,int]]
+    _lcd_led_set: list[tuple[int,int]]
     _render_wait: Condition
     _transition: LCDTransition
     _transition_start: bool
@@ -119,7 +120,8 @@ class LCDDriver(ABC):
             self._lcd_mem_is[i] = DEFAULT_CHAR
             self._lcd_mem_set[i] = DEFAULT_CHAR
 
-        self._lcd_led_states = [(-1, -1)] * self.lcd_led_count
+        self._lcd_led_is = [(-1, -1)] * self.lcd_led_count
+        self._lcd_led_set = [(-1, -1)] * self.lcd_led_count
         for i in range(self.lcd_led_count):
             self.set_led(i, 0, 0)
 
@@ -137,12 +139,15 @@ class LCDDriver(ABC):
             in_transition = self._transition.running
             if in_transition and self._transition.render():
                 data = self._transition.data
+                leds = self._transition.leds
             else:
                 self.render()
                 data = self._lcd_mem_set
+                leds = self._lcd_led_set
                 in_transition = False
 
             self._render_send_display(data)
+            self._render_send_leds(leds)
 
             self._render_wait.acquire()
             self._render_wait.wait(TRANSITION_RENDER_PERIOD if in_transition else self._render_period)
@@ -151,11 +156,7 @@ class LCDDriver(ABC):
         self._lcd.close()
 
     def set_led(self, idx: int, red: int, green: int) -> None:
-        old_red, old_green = self._lcd_led_states[idx]
-        if old_red == red and old_green == green:
-            return
-        self._lcd.write_led(idx, red, green)
-        self._lcd_led_states[idx] = (red, green)
+        self._lcd_led_set[idx] = (red, green)
 
     def clear(self) -> None:
         for i in range(self.lcd_pixel_count):
@@ -173,6 +174,14 @@ class LCDDriver(ABC):
         elif content_len < self.lcd_width:
             content += " " * (self.lcd_width - content_len)
         self.write_at(0, idx, content)
+
+    def _render_send_leds(self, leds: list[tuple[int, int]]):
+        for idx, (red, green) in enumerate(leds):
+            old_red, old_green = self._lcd_led_is[idx]
+            if old_red == red and old_green == green:
+                return
+            self._lcd.write_led(idx, red, green)
+            self._lcd_led_is[idx] = (red, green)
 
     def _render_send_display(self, data: bytearray):
         changes: list[tuple] = []
