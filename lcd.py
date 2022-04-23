@@ -1,10 +1,7 @@
 from dataclasses import dataclass
-from inspect import trace
 from threading import Condition, Thread
-from time import sleep
 from enum import Enum
 import traceback
-from types import TracebackType
 from serial import Serial
 from crc import crc16
 

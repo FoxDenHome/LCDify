@@ -17,7 +17,7 @@ class PrinterLCDTransition(LCDTransition):
         if not super().render():
             return False
 
-        target_set = round(self.pixels * self.progress)
+        target_set = round(self.pixel_count * self.progress)
 
         if target_set > self.set_up_to:
             for i in range(self.set_up_to, target_set):

@@ -7,7 +7,7 @@ from importlib import import_module
 
 LCD_INITIAL_CONFIG_VERSION = 0x01
 
-def initial_config(lcd: LCDWithID, id: int, name: str):
+def initial_config(lcd: LCDWithID, id: int):
     lcd.open()
     lcd.set_backlight(10)
     lcd.set_contrast(100)
@@ -60,7 +60,7 @@ for config in displays_configs:
     name = config["name"]
     port, version = find_port_by_id(id)
     if version != LCD_INITIAL_CONFIG_VERSION:
-        initial_config(LCDWithID(port), id, name)
+        initial_config(LCDWithID(port), id)
 
     if port is None:
         print(f"No port found for display {name} (ID {id}). Trying to find a free port.")
