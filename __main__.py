@@ -44,7 +44,7 @@ for port in ports:
 def find_port_by_id(id: int):
     if id in ports_by_id:
         return ports_by_id[id]
-    return None
+    return None, None
 
 def find_first_free_port():
     if len(ports_without_id) < 1:
