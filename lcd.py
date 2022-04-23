@@ -349,16 +349,20 @@ class LCD():
         return resp.data
 
 class LCDWithID(LCD):
-    def read_id(self) -> int:
+    def read_id_and_version(self) -> tuple[int, int]:
         data = self.read_user_flash()
         id = data[0]
+        version = data[1]
         if id == 0xFF or id == 0x00:
             return None
-        return id
+        return id, version
 
-    def write_id(self, id: int):
+    def write_id_and_version(self, id: int, version: int):
         if id <= 0x00 or id >= 0xFF:
-            raise ValueError("ID must be between 0x00 and 0xFF")
+            raise ValueError("ID must be between 0x00 and 0xFF exclusive")
+        if version < 0x00 or version > 0xFF:
+            raise ValueError("Version must be between 0x00 and 0xFF inclusive")
         flash = bytearray(16)
         flash[0] = id
+        flash[1] = version
         self.write_user_flash(flash)
