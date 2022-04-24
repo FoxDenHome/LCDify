@@ -4,8 +4,7 @@ displays:
     driver:
         type: paged
         pages:
-            -   type: ping_packet_loss
-            -   type: ping_rtt
+            -   type: ping_stats
         transition:
             type: none
 -   id: 2

@@ -156,8 +156,8 @@ class LCDDriver(ABC):
 
         self._lcd.close()
 
-    def set_led(self, idx: int, red: int, green: int) -> None:
-        self._lcd_led_set[idx] = (red, green)
+    def set_led(self, idx: int, color: tuple[int, int]) -> None:
+        self._lcd_led_set[idx] = color
 
     def clear(self) -> None:
         for i in range(self.lcd_pixel_count):
