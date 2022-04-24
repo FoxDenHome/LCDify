@@ -39,6 +39,9 @@ class PingStatsLCDPage(UpdatingLCDPage):
             self.driver.set_line(1, "Loading...")
             return
 
+        if not self.check_had_update():
+            return
+
         lte_rtt = None
         eth_rtt = None
         wan_rtt = None

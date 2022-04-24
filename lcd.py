@@ -352,7 +352,7 @@ class LCDWithID(LCD):
         id = data[0]
         version = data[1]
         if id == 0xFF or id == 0x00:
-            return None
+            return None, None
         return id, version
 
     def write_id_and_version(self, id: int, version: int):
