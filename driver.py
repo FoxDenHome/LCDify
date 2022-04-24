@@ -4,7 +4,7 @@ from threading import Thread, Condition
 from lcd import LCD, LCDKey, LCDKeyEvent
 from transition import LCDTransition
 from transitions.none import NoneLCDTransition
-from utils import critical_call
+from utils import LEDColorPreset, critical_call
 
 DEFAULT_CHAR = ord(" ")
 MIN_SPACING_BETWEEN_DIFFS = 5
@@ -124,7 +124,7 @@ class LCDDriver(ABC):
         self._lcd_led_is = [(-1, -1)] * self.lcd_led_count
         self._lcd_led_set = [(-1, -1)] * self.lcd_led_count
         for i in range(self.lcd_led_count):
-            self.set_led(i, 0, 0)
+            self.set_led(i, LEDColorPreset.OFF)
 
         self.render_init()
         while self._should_run:
