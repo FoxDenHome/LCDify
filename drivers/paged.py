@@ -1,8 +1,11 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from importlib import import_module
 from driver import LCDDriver
 from datetime import timedelta, datetime
 from lcd import LCDKey
-from page import LCDPage
+if TYPE_CHECKING:
+    from page import LCDPage
 
 class PagedLCDDriver(LCDDriver):
     current_page: int
