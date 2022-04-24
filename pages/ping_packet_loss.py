@@ -9,11 +9,11 @@ class PingPacketLossLCDPage(UpdatingLCDPage):
 
     def _set_loss_led(self, idx: int, loss: float):
         if loss < 5:
-            self.driver.set_led(idx, 0, 10)
+            self.driver.set_led(idx, 0, 100)
         elif loss < 90:
-            self.driver.set_led(idx, 5, 10)
+            self.driver.set_led(idx, 50, 100)
         else:
-            self.driver.set_led(idx, 10, 0)
+            self.driver.set_led(idx, 100, 0)
 
     def update(self):
         self.packet_loss_res = query_prometheus("ping_percent_packet_loss")

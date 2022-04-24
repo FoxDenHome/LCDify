@@ -9,11 +9,11 @@ class PingRTTLCDPage(UpdatingLCDPage):
 
     def _set_rtt_led(self, idx: int, rtt: float, warn: float, crit: float):
         if rtt < warn:
-            self.driver.set_led(idx, 0, 10)
+            self.driver.set_led(idx, 0, 100)
         elif rtt < crit:
-            self.driver.set_led(idx, 5, 10)
+            self.driver.set_led(idx, 50, 100)
         else:
-            self.driver.set_led(idx, 10, 0)
+            self.driver.set_led(idx, 100, 0)
 
     def update(self):
         self.ping_rtt_res = query_prometheus("ping_average_response_ms > 0")
