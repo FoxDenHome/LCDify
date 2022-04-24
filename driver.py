@@ -124,7 +124,7 @@ class LCDDriver(ABC):
         self._lcd_led_is = [(-1, -1)] * self.lcd_led_count
         self._lcd_led_set = [(-1, -1)] * self.lcd_led_count
         for i in range(self.lcd_led_count):
-            self.set_led(i, LEDColorPreset.OFF)
+            self.set_led(i, LEDColorPreset.OFF.value)
 
         self.render_init()
         while self._should_run:
