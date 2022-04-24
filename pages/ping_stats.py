@@ -64,18 +64,18 @@ class PingStatsLCDPage(UpdatingLCDPage):
             elif name == "internet":
                 wan_loss = val
 
-        self.driver.set_led(1, LEDColorPreset.get_most_critical(
+        self.driver.set_led(1, LEDColorPreset.get_most_critical([
             self._calc_loss_led(wan_loss),
             self._calc_rtt_led(wan_rtt, 10, 50)
-        ).value)
-        self.driver.set_led(2, LEDColorPreset.get_most_critical(
+        ]).value)
+        self.driver.set_led(2, LEDColorPreset.get_most_critical([
             self._calc_loss_led(eth_loss),
             self._calc_rtt_led(eth_rtt, 10, 50)
-        ).value)
-        self.driver.set_led(3, LEDColorPreset.get_most_critical(
+        ]).value)
+        self.driver.set_led(3, LEDColorPreset.get_most_critical([
             self._calc_loss_led(lte_loss),
             self._calc_rtt_led(lte_rtt, 100, 300)
-        ).value)
+        ]).value)
 
         self.driver.set_line(1, f"WAN {wan_rtt:3.0f} ms / {wan_loss:3.0f} %")
         self.driver.set_line(2, f"ETH {eth_rtt:3.0f} ms / {eth_loss:3.0f} %")
