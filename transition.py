@@ -4,10 +4,10 @@ from datetime import datetime
 class LCDTransition(ABC):
     from_data: bytearray
     to_data: bytearray
-    from_leds: list[tuple[int,int]]
-    to_leds: list[tuple[int,int]]
+    from_leds: list[tuple[int, int]]
+    to_leds: list[tuple[int, int]]
     data: bytearray
-    leds: list[tuple[int,int]]
+    leds: list[tuple[int, int]]
     period: int
     start_time: datetime
     running: bool
@@ -25,7 +25,7 @@ class LCDTransition(ABC):
         self.running = False
         self.custom_led_transition = False
 
-    def start(self, from_data: bytearray, to_data: bytearray, from_leds: list[tuple[int,int]], to_leds: list[tuple[int,int]], width: int, height: int):
+    def start(self, from_data: bytearray, to_data: bytearray, from_leds: list[tuple[int, int]], to_leds: list[tuple[int, int]], width: int, height: int):
         self.from_data = from_data
         self.to_data = to_data
         self.from_leds = from_leds

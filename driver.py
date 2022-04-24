@@ -28,8 +28,8 @@ class LCDDriver(ABC):
     _lines: list[str]
     _lcd_mem_is: bytearray
     _lcd_mem_set: bytearray
-    _lcd_led_is: list[tuple[int,int]]
-    _lcd_led_set: list[tuple[int,int]]
+    _lcd_led_is: list[tuple[int, int]]
+    _lcd_led_set: list[tuple[int, int]]
     _render_wait: Condition
     _transition: LCDTransition
     _transition_start: bool
@@ -185,7 +185,7 @@ class LCDDriver(ABC):
             self._lcd_led_is[idx] = (red, green)
 
     def _render_send_display(self, data: bytearray):
-        changes: list[tuple] = []
+        changes: list[tuple[int, int]] = []
 
         change_start = -1
         change_end = -1
