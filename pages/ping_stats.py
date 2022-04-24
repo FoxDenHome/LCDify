@@ -1,10 +1,10 @@
-from driver import LCDDriver
+from drivers.paged import PagedLCDDriver
 from page_updating import UpdatingLCDPage
 from prometheus import query_prometheus
 from utils import LEDColorPreset
 
 class PingStatsLCDPage(UpdatingLCDPage):
-    def __init__(self, config, driver: LCDDriver):
+    def __init__(self, config, driver: PagedLCDDriver):
         super().__init__(config, driver, "PING RTT / LOSS")
         self.ping_rtt_res = None
         self.packet_loss_res = None

@@ -1,18 +1,25 @@
-from driver import LCDDriver
+from drivers.paged import PagedLCDDriver
 
 class LCDPage():
     should_run: bool
-    driver: LCDDriver
+    driver: PagedLCDDriver
     formatted_title: str
     title: str
 
-    def __init__(self, config, driver: LCDDriver, default_title: str = "UNTITLED"):
+    def __init__(self, config, driver: PagedLCDDriver, default_title: str = "UNTITLED"):
         self.driver = driver
         self.title = default_title
         if "title" in config:
             self.title = config["title"]
         self.should_run = False
         self.formatted_title = None
+
+    def is_current(self) -> bool:
+        return self.driver.pages[self.driver.current_page] == self
+
+    def do_render_if_current(self) -> None:
+        if self.is_current():
+            self.driver.do_render()
 
     def start(self):
         self.should_run = True
