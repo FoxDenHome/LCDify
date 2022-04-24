@@ -36,6 +36,7 @@ class UpdatingLCDPage(LCDPage):
     def start(self):
         super().start()
         self._first_update = True
+        self._had_update = True
         self._update_thread = Thread(name=f"LCD page update {self.title}", target=critical_call, args=(self._update_loop,))
         self._update_thread.start()
 
@@ -70,15 +71,17 @@ class UpdatingLCDPage(LCDPage):
         if self.use_led0_for_updates:
             self.do_render_if_current()
 
-    def check_had_update(self) -> bool:
-        had_update = self._had_update
-        self._had_update = False
-        return had_update
-
     def render(self):
         super().render()
         if self.use_led0_for_updates:
             self.driver.set_led(0, self._update_status.value)
+
+        if self._had_update:
+            self._had_update = False
+            self.render_on_update()
+
+    def render_on_update(self):
+        pass
 
     def update(self):
         pass

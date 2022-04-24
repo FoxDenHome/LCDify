@@ -32,14 +32,9 @@ class PingStatsLCDPage(UpdatingLCDPage):
         self.ping_rtt_res = ping_rtt_res
         self.packet_loss_res = packet_loss_res
 
-    def render(self):
-        super().render()
-
+    def render_on_update(self):
         if self.ping_rtt_res is None or self.packet_loss_res is None:
             self.driver.set_line(1, "Loading...")
-            return
-
-        if not self.check_had_update():
             return
 
         lte_rtt = None
