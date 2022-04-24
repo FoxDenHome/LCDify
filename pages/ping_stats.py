@@ -26,8 +26,11 @@ class PingStatsLCDPage(UpdatingLCDPage):
             return LEDColorPreset.CRITICAL
 
     def update(self):
-        self.ping_rtt_res = query_prometheus("ping_average_response_ms > 0")
-        self.packet_loss_res = query_prometheus("ping_percent_packet_loss")
+        ping_rtt_res = query_prometheus("ping_average_response_ms > 0")
+        packet_loss_res = query_prometheus("ping_percent_packet_loss")
+
+        self.ping_rtt_res = ping_rtt_res
+        self.packet_loss_res = packet_loss_res
 
     def render(self):
         super().render()
