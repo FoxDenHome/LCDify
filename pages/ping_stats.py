@@ -77,8 +77,8 @@ class PingStatsLCDPage(UpdatingLCDPage):
             self._calc_rtt_led(lte_rtt, 100, 300)
         ]).value)
 
-        self.driver.set_line(1, f"WAN {wan_rtt:3.0f} ms / {wan_loss:3.0f} %")
-        self.driver.set_line(2, f"ETH {eth_rtt:3.0f} ms / {eth_loss:3.0f} %")
-        self.driver.set_line(3, f"LTE {lte_rtt:3.0f} ms / {lte_loss:3.0f} %")
+        self.driver.set_line(1, f"WAN {wan_rtt:4.0f} ms / {wan_loss:4.0f} %")
+        self.driver.set_line(2, f"ETH {eth_rtt:4.0f} ms / {eth_loss:4.0f} %")
+        self.driver.set_line(3, f"LTE {lte_rtt:4.0f} ms / {lte_loss:4.0f} %")
 
 PAGE = PingStatsLCDPage
