@@ -4,6 +4,7 @@ from threading import Thread, Condition
 from lcd import LCD, LCDKey, LCDKeyEvent
 from transition import LCDTransition
 from transitions.none import NoneLCDTransition
+from utils import critical_call
 
 DEFAULT_CHAR = ord(" ")
 MIN_SPACING_BETWEEN_DIFFS = 5
@@ -66,7 +67,7 @@ class LCDDriver(ABC):
         self.lcd_height = self._lcd.height()
         self.lcd_led_count = self._lcd.led_count()
         self._should_run = True
-        self._render_thread = Thread(name=f"LCD render {self._lcd.port}", target=self._loop)
+        self._render_thread = Thread(name=f"LCD render {self._lcd.port}", target=critical_call, args=(self._loop,))
         self._render_thread.start()
 
     def stop(self):

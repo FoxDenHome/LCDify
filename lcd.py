@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from threading import Condition, Thread
 from enum import Enum
-import traceback
+from traceback import print_exc
 from serial import Serial
 from crc import crc16
+from utils import critical_call
 
 LCD_BAUDRATE = 115200
 MAX_DATA_LENGTH = 22
@@ -170,7 +171,7 @@ class LCD():
         self.close()
         self._serial = Serial(self.port, self.baudrate, timeout=1)
         self._should_run = True
-        self._reader_thread_var = Thread(target=self._reader_thread, daemon=True, name=f"LCD reader {self.port}")
+        self._reader_thread_var = Thread(name=f"LCD reader {self.port}", target=critical_call, args=(self._reader_thread,))
         self._reader_thread_var.start()
 
     def close(self) -> None:
@@ -256,7 +257,7 @@ class LCD():
                 self._read()
             except Exception:
                 print(f"Error reading from LCD on port {self.port}")
-                traceback.print_exc()
+                print_exc()
             self._key_poll_wait.acquire()
             self._key_poll_wait.wait(0.01)
             self._key_poll_wait.release()
@@ -319,7 +320,7 @@ class LCD():
                 handler(key=key, event=event)
             except Exception:
                 print(f"Error in key event handler on port {self.port} with handler {handler}")
-                traceback.print_exc()
+                print_exc()
 
     def send(self, command: int, data: bytearray = []) -> bytearray:
         data_len = len(data)

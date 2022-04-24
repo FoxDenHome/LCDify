@@ -1,6 +1,7 @@
 from lib2to3.pgen2.driver import Driver
 from threading import Condition, Thread
 from page import LCDPage
+from utils import critical_call
 
 class UpdatingLCDPage(LCDPage):
     update_period: float
@@ -19,7 +20,7 @@ class UpdatingLCDPage(LCDPage):
 
     def start(self):
         super().start()
-        self._update_thread = Thread(name=f"LCD page update {self.title}", target=self._update_loop)
+        self._update_thread = Thread(name=f"LCD page update {self.title}", target=critical_call, args=(self._update_loop,))
         self._update_thread.start()
 
     def stop(self):
