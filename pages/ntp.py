@@ -40,7 +40,7 @@ class NTPLCDPage(UpdatingLCDPage):
         if self.ntp_stratum_res != 1:
             led3_color = LEDColorPreset.WARNING
         if self.ntp_sanity_res < 100:
-            led3_color = LEDColorPreset.ERROR
+            led3_color = LEDColorPreset.CRITICAL
         self.driver.set_led(3, led3_color.value)
 
 PAGE = NTPLCDPage
