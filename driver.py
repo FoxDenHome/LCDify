@@ -169,7 +169,7 @@ class LCDDriver(ABC):
             self._lcd_mem_set[i] = DEFAULT_CHAR
 
     def write_at(self, col: int, row: int, content: str) -> None:
-        content_bytes = content.encode("ascii")
+        content_bytes = content.encode("latin-1")
         for i, c in enumerate(content_bytes):
             self._lcd_mem_set[(row * self.lcd_width) + col + i] = c
 

@@ -77,7 +77,7 @@ class LCDPacket():
         self.data = bytearray(data)
 
     def data_as_str(self):
-        return bytearray(self.data).decode("ascii")
+        return bytearray(self.data).decode("latin-1")
 
     def __str__(self):
         return f"LCDPacket(type={self.type.name}, command=0x{self.command:02x}, data=[{', '.join(list(map(lambda x: f'0x{x:02x}', self.data)))}])"
@@ -193,7 +193,7 @@ class LCD():
         self.send(0x00)
 
     def version(self) -> str:
-        return self.send(0x01).decode("ascii")
+        return self.send(0x01).decode("latin-1")
 
     def write_user_flash(self, data: bytearray) -> None:
         self.send(0x02, data)
@@ -230,7 +230,7 @@ class LCD():
         return LCDKeyPollResult(current=LCDKeyMask(res[0]), pressed=LCDKeyMask(res[1]), released=LCDKeyMask(res[2]))
 
     def write_str(self, col: int, row: int, data: str) -> None:
-        self.write(col, row, bytearray(data, "ascii"))
+        self.write(col, row, bytearray(data, "latin-1"))
 
     def write(self, col: int, row: int, data: bytearray) -> None:
         self.send(0x1F, [col, row] + list(data))

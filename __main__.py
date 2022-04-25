@@ -5,6 +5,7 @@ from driver import LCDDriver
 from lcd import LCD_KEY_MASK_ALL, LCDWithID
 from serial.tools.list_ports import comports
 from importlib import import_module
+from os import _exit
 
 LCD_INITIAL_CONFIG_VERSION = 0x01
 
@@ -55,7 +56,7 @@ def find_first_free_port():
 def _force_stop_do_in(seconds: int):
     sleep(seconds)
     print("Forced stop hit")
-    exit(2)
+    _exit(2)
 
 def force_stop_in(seconds: int):
     t = Thread(target=_force_stop_do_in, args=(seconds,), daemon=True)
@@ -75,7 +76,7 @@ for config in displays_configs:
         port = find_first_free_port()
         if port is None:
             print("No free ports found, either!")
-            exit(3)
+            _exit(3)
 
         print(f"Found free port {port}. Writing ID...")
         lcd = LCDWithID(port)
