@@ -1,4 +1,5 @@
 from drivers.paged import PagedLCDDriver
+from utils import LEDColorPreset
 
 class LCDPage():
     should_run: bool
@@ -20,6 +21,14 @@ class LCDPage():
     def do_render_if_current(self) -> None:
         if self.is_current():
             self.driver.do_render()
+
+    def calc_led(self, val: float, warn: float, crit: float):
+        if val < warn:
+            return LEDColorPreset.NORMAL
+        elif val < crit:
+            return LEDColorPreset.WARNING
+        else:
+            return LEDColorPreset.CRITICAL
 
     def start(self):
         self.should_run = True

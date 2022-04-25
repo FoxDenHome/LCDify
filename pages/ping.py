@@ -3,27 +3,14 @@ from page_updating import UpdatingLCDPage
 from prometheus import query_prometheus
 from utils import LEDColorPreset
 
-class PingStatsLCDPage(UpdatingLCDPage):
+class PingLCDPage(UpdatingLCDPage):
     def __init__(self, config, driver: PagedLCDDriver):
         super().__init__(config, driver, "PING RTT / LOSS")
         self.ping_rtt_res = None
         self.packet_loss_res = None
 
     def _calc_loss_led(self, loss: float):
-        if loss < 5:
-            return LEDColorPreset.NORMAL
-        elif loss < 90:
-            return LEDColorPreset.WARNING
-        else:
-            return LEDColorPreset.CRITICAL
-
-    def _calc_rtt_led(self, rtt: float, warn: float, crit: float):
-        if rtt < warn:
-            return LEDColorPreset.NORMAL
-        elif rtt < crit:
-            return LEDColorPreset.WARNING
-        else:
-            return LEDColorPreset.CRITICAL
+        return self.calc_led(loss, 5, 90)
 
     def update(self):
         ping_rtt_res = query_prometheus("ping_average_response_ms > 0")
@@ -67,19 +54,19 @@ class PingStatsLCDPage(UpdatingLCDPage):
 
         self.driver.set_led(1, LEDColorPreset.get_most_critical([
             self._calc_loss_led(wan_loss),
-            self._calc_rtt_led(wan_rtt, 10, 50)
+            self.calc_led(wan_rtt, 10, 50)
         ]).value)
         self.driver.set_led(2, LEDColorPreset.get_most_critical([
             self._calc_loss_led(eth_loss),
-            self._calc_rtt_led(eth_rtt, 10, 50)
+            self.calc_led(eth_rtt, 10, 50)
         ]).value)
         self.driver.set_led(3, LEDColorPreset.get_most_critical([
             self._calc_loss_led(lte_loss),
-            self._calc_rtt_led(lte_rtt, 100, 300)
+            self.calc_led(lte_rtt, 100, 300)
         ]).value)
 
         self.driver.set_line(1, f"WAN {wan_rtt:4.0f} ms / {wan_loss:4.0f} %")
         self.driver.set_line(2, f"ETH {eth_rtt:4.0f} ms / {eth_loss:4.0f} %")
         self.driver.set_line(3, f"LTE {lte_rtt:4.0f} ms / {lte_loss:4.0f} %")
 
-PAGE = PingStatsLCDPage
+PAGE = PingLCDPage

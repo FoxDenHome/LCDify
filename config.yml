@@ -4,7 +4,7 @@ displays:
     driver:
         type: paged
         pages:
-            -   type: ping_stats
+            -   type: ping
         transition:
             type: none
 -   id: 2
@@ -12,4 +12,6 @@ displays:
     driver:
         type: paged
         pages:
-            -   type: dummy
+            -   type: ntp
+        transition:
+            type: none
