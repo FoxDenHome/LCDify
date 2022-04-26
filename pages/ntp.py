@@ -30,12 +30,12 @@ class NTPLCDPage(UpdatingLCDPage):
         estimated_error_ms = self.ntp_estimated_error_res * 1_000
 
         self.driver.set_line(1, f"Err {estimated_error_ms:12.6f} ms")
-        self.driver.set_led(1, self.calc_led(estimated_error_ms, 0.001, 1).value)
+        self.driver.set_led(1, self.calc_led_upper_threshhold(estimated_error_ms, 0.001, 1).value)
 
         self.driver.set_line(2, f"Adj {self.ntp_ppm_adjustment_res:12.6f} ppm")
-        self.driver.set_led(2, self.calc_led(abs(self.ntp_ppm_adjustment_res), 20, 100).value)
+        self.driver.set_led(2, self.calc_led_upper_threshhold(abs(self.ntp_ppm_adjustment_res), 20, 100).value)
 
-        self.driver.set_line(3, f"Str {self.ntp_stratum_res:2.0f}       San {self.ntp_sanity_res:3.0f}")
+        self.driver.set_line(3, f"Str {self.ntp_stratum_res:2.0f}    /  San {self.ntp_sanity_res:3.0f}")
         led3_color = LEDColorPreset.NORMAL
         if self.ntp_stratum_res != 1:
             led3_color = LEDColorPreset.WARNING

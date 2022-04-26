@@ -74,6 +74,9 @@ class UpdatingLCDPage(LCDPage):
         if self.use_led0_for_updates:
             self.do_render_if_current()
 
+    def enable_rerender(self):
+        self._had_update = True
+
     def render(self):
         super().render()
 

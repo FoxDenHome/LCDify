@@ -4,6 +4,7 @@ displays:
     driver:
         type: paged
         pages:
+            -   type: lte
             -   type: ping
         transition:
             type: none

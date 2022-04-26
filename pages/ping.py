@@ -10,7 +10,7 @@ class PingLCDPage(UpdatingLCDPage):
         self.packet_loss_res = None
 
     def _calc_loss_led(self, loss: float):
-        return self.calc_led(loss, 5, 90)
+        return self.calc_led_upper_threshhold(loss, 5, 90)
 
     def update(self):
         ping_rtt_res = query_prometheus("ping_average_response_ms > 0")
@@ -54,15 +54,15 @@ class PingLCDPage(UpdatingLCDPage):
 
         self.driver.set_led(1, LEDColorPreset.get_most_critical([
             self._calc_loss_led(wan_loss),
-            self.calc_led(wan_rtt, 10, 50)
+            self.calc_led_upper_threshhold(wan_rtt, 10, 50)
         ]).value)
         self.driver.set_led(2, LEDColorPreset.get_most_critical([
             self._calc_loss_led(eth_loss),
-            self.calc_led(eth_rtt, 10, 50)
+            self.calc_led_upper_threshhold(eth_rtt, 10, 50)
         ]).value)
         self.driver.set_led(3, LEDColorPreset.get_most_critical([
             self._calc_loss_led(lte_loss),
-            self.calc_led(lte_rtt, 100, 300)
+            self.calc_led_upper_threshhold(lte_rtt, 100, 300)
         ]).value)
 
         self.driver.set_line(1, f"WAN {wan_rtt:4.0f} ms / {wan_loss:4.0f} %")

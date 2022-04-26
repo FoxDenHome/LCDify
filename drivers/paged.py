@@ -56,6 +56,7 @@ class PagedLCDDriver(LCDDriver):
     def set_page(self, page: int):
         self.last_cycle_time = datetime.now()
         self.current_page = page % len(self.pages)
+        self.pages[self.current_page].enable_rerender()
 
     def next_page(self):
         self.set_page(self.current_page + 1)
@@ -63,9 +64,11 @@ class PagedLCDDriver(LCDDriver):
     def previous_page(self):
         self.set_page(self.current_page - 1)
 
-    def render(self):
+    def render(self, rerender=False):
         if self.auto_cycle_time is not None and datetime.now() - self.last_cycle_time > self.auto_cycle_time:
             self.next_page()
+        if rerender:
+            self.pages[self.current_page].enable_rerender()
         self.pages[self.current_page].render()
 
 DRIVER = PagedLCDDriver

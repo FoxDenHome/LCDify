@@ -136,7 +136,7 @@ class LCDDriver(ABC):
                 self._transition.stop()
                 self._transition_cancel = False
             elif self._transition_start:
-                self.render()
+                self.render(rerender=True)
                 self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set, from_leds=self._lcd_led_is, to_leds=self._lcd_led_set, width=self.lcd_width, height=self.lcd_height)
                 self._transition_start = False
 
@@ -185,7 +185,7 @@ class LCDDriver(ABC):
         for idx, (red, green) in enumerate(leds):
             old_red, old_green = self._lcd_led_is[idx]
             if old_red == red and old_green == green:
-                return
+                continue
             self._lcd.write_led(idx, red, green)
             self._lcd_led_is[idx] = (red, green)
 
@@ -227,5 +227,5 @@ class LCDDriver(ABC):
         pass
 
     @abstractmethod
-    def render(self):
+    def render(self, rerender=False):
         pass

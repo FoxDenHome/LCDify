@@ -22,10 +22,19 @@ class LCDPage():
         if self.is_current():
             self.driver.do_render()
 
-    def calc_led(self, val: float, warn: float, crit: float):
-        if val < warn:
+
+    def calc_led_lower_threshhold(self, val: float, warn: float, crit: float):
+        if val >= warn:
             return LEDColorPreset.NORMAL
-        elif val < crit:
+        elif val >= crit:
+            return LEDColorPreset.WARNING
+        else:
+            return LEDColorPreset.CRITICAL
+
+    def calc_led_upper_threshhold(self, val: float, warn: float, crit: float):
+        if val <= warn:
+            return LEDColorPreset.NORMAL
+        elif val <= crit:
             return LEDColorPreset.WARNING
         else:
             return LEDColorPreset.CRITICAL
@@ -39,6 +48,9 @@ class LCDPage():
 
     def render(self) -> None:
         self.driver.set_line(0, self.formatted_title)
+
+    def enable_rerender(self):
+        pass
 
     def format_text_center(self, text: str, pad_char: str) -> str:
         text_len = len(text)
@@ -58,7 +70,7 @@ class LCDPage():
                     if text[idx] == " ":
                         center_space = idx
                         break
-                    idx = center_idx - center_offset
+                    idx = round(center_idx - center_offset)
                     if text[idx] == " ":
                         center_space = idx
                         break
