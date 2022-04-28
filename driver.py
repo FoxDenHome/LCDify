@@ -34,7 +34,7 @@ class LCDDriver(ABC):
     def __init__(self, config):
         self.lcd = None
         self._should_run = False
-        self._render_period = 0.1
+        self._render_period = 1.0 / 30.0
         if "render_period" in config:
             self._render_period = config["render_period"]
         self._render_thread = None
