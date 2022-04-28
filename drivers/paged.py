@@ -12,6 +12,7 @@ class PagedLCDDriver(LCDDriver):
     pages: list[LCDPage]
     auto_cycle_time: timedelta
     last_cycle_time: datetime
+    page_changed: bool
 
     def __init__(self, config):
         super().__init__(config)
@@ -56,6 +57,7 @@ class PagedLCDDriver(LCDDriver):
     def set_page(self, page: int):
         self.last_cycle_time = datetime.now()
         self.current_page = page % len(self.pages)
+        self.page_changed = True
 
     def next_page(self):
         self.set_page(self.current_page + 1)
@@ -67,8 +69,9 @@ class PagedLCDDriver(LCDDriver):
         if self.auto_cycle_time is not None and datetime.now() - self.last_cycle_time > self.auto_cycle_time:
             self.next_page()
         page = self.pages[self.current_page]
-        if page.dirty:
+        if page.dirty or self.page_changed:
             page.dirty = False
+            self.page_changed = False
             return page.lcd_mem_set, page.lcd_led_set
         return None, None
 
