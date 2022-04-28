@@ -25,7 +25,6 @@ class LCDDriver(ABC):
     _transition: LCDTransition
     _transition_start: bool
     _transition_cancel: bool
-    _do_render_force: bool
 
     lcd_width: int
     lcd_height: int
@@ -42,7 +41,6 @@ class LCDDriver(ABC):
         self._lines = []
         self._render_wait = Condition()
         self._lcd = None
-        self._do_render_force = False
 
         if "transition" in config:
             transition_config = config["transition"]
@@ -70,7 +68,9 @@ class LCDDriver(ABC):
         self._should_run = False
 
         if self._render_thread is not None:
-            self.do_render()
+            self._render_wait.acquire()
+            self._render_wait.notify_all()
+            self._render_wait.release()
             self._render_thread.join()
             self._render_thread = None
 
@@ -98,12 +98,6 @@ class LCDDriver(ABC):
 
     def cancel_transition(self):
         self._transition_cancel = True
-
-    def do_render(self):
-        self._render_wait.acquire()
-        self._do_render_force = True
-        self._render_wait.notify()
-        self._render_wait.release()
 
     def _loop(self):
         self._transition_start = False
@@ -144,9 +138,7 @@ class LCDDriver(ABC):
                 self._render_send_leds(leds)
 
             self._render_wait.acquire()
-            if not self._do_render_force:
-                self._render_wait.wait(self._render_period)
-            self._do_render_force = False
+            self._render_wait.wait(self._render_period)
             self._render_wait.release()
 
         self._lcd.close()

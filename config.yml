@@ -5,7 +5,7 @@ displays:
         type: paged
         pages:
             -   type: lte
-            #-   type: ping
+            -   type: ping
         transition:
             type: none
 -   id: 2
