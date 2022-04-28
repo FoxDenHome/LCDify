@@ -67,6 +67,9 @@ class PagedLCDDriver(LCDDriver):
         if self.auto_cycle_time is not None and datetime.now() - self.last_cycle_time > self.auto_cycle_time:
             self.next_page()
         page = self.pages[self.current_page]
-        return page.lcd_mem_set, page.lcd_led_set
+        if page.dirty:
+            page.dirty = False
+            return page.lcd_mem_set, page.lcd_led_set
+        return None, None
 
 DRIVER = PagedLCDDriver

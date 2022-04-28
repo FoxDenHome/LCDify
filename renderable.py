@@ -3,6 +3,7 @@ DEFAULT_CHAR = ord(" ")
 class Renderable():
     lcd_led_set: list[tuple[int, int]]
     lcd_mem_set: bytearray
+    dirty: bool
     
     lcd_height: int
     lcd_width: int
@@ -10,6 +11,7 @@ class Renderable():
     lcd_pixel_count: int
 
     def __init__(self):
+        self.dirty = False
         self.init_arrays(0, 0, 0)
 
     def init_arrays(self, height: int, width: int, led_count: int):
@@ -21,14 +23,17 @@ class Renderable():
         self.lcd_mem_set = bytearray(self.lcd_pixel_count)
         for i in range(self.lcd_pixel_count):
             self.lcd_mem_set[i] = DEFAULT_CHAR
+        self.dirty = True
 
     def set_led(self, idx: int, color: tuple[int, int]) -> None:
         self.lcd_led_set[idx] = color
+        self.dirty = True
 
     def write_at(self, col: int, row: int, content: str) -> None:
         content_bytes = content.encode("latin-1")
         for i, c in enumerate(content_bytes):
             self.lcd_mem_set[(row * self.lcd_width) + col + i] = c
+        self.dirty = True
 
     def set_line(self, idx: int, content: str) -> None:
         content_len = len(content)
@@ -41,3 +46,4 @@ class Renderable():
     def clear(self) -> None:
         for i in range(self.lcd_pixel_count):
             self.lcd_mem_set[i] = DEFAULT_CHAR
+        self.dirty = True
