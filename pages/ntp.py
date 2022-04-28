@@ -6,10 +6,6 @@ from utils import LEDColorPreset
 class NTPLCDPage(UpdatingLCDPage):
     def __init__(self, config, driver: PagedLCDDriver):
         super().__init__(config, driver, "NTP")
-        self.ntp_estimated_error_res = None
-        self.ntp_ppm_adjustment_res = None
-        self.ntp_stratum_res = None
-        self.ntp_sanity_res = None
 
     def update(self):
         ntp_estimated_error_res = query_prometheus_first_value("node_timex_estimated_error_seconds{instance=\"ntp.foxden.network:9100\"}") * 1_000

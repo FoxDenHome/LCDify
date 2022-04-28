@@ -1,6 +1,5 @@
 from enum import Enum
 from threading import Condition, Thread
-from time import sleep
 from traceback import print_exc
 from drivers.paged import PagedLCDDriver
 from page import LCDPage

@@ -6,8 +6,6 @@ from utils import LEDColorPreset
 class PingLCDPage(UpdatingLCDPage):
     def __init__(self, config, driver: PagedLCDDriver):
         super().__init__(config, driver, "PING RTT / LOSS")
-        self.ping_rtt_res = None
-        self.packet_loss_res = None
 
     def _calc_loss_led(self, loss: float):
         return self.calc_led_upper_threshhold(loss, 5, 90)
