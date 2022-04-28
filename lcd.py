@@ -1,9 +1,6 @@
 from dataclasses import dataclass
-from multiprocessing.sharedctypes import Value
-from threading import Condition, Thread, Lock
+from threading import Condition, Thread
 from enum import Enum
-from time import sleep
-from tkinter.tix import MAX
 from traceback import print_exc
 from serial import Serial
 from crc import crc16
@@ -336,8 +333,7 @@ class LCD():
             try:
                 return self._send(command, data)
             except LCDTimeoutException:
-                sleep(0.5)
-                pass
+                print(f"LCD timeout on {self.port}...")
             retries -= 1
         raise LCDTimeoutException()
 
