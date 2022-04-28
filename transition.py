@@ -1,20 +1,16 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from renderable import Renderable
 
-class LCDTransition(ABC):
+class LCDTransition(ABC, Renderable):
     from_data: bytearray
     to_data: bytearray
     from_leds: list[tuple[int, int]]
     to_leds: list[tuple[int, int]]
-    data: bytearray
-    leds: list[tuple[int, int]]
     period: int
     start_time: datetime
     running: bool
     progress: float
-    width: int
-    height: int
-    pixel_count: int
     custom_led_transition: bool
 
     def __init__(self, config):
@@ -26,12 +22,13 @@ class LCDTransition(ABC):
         self.custom_led_transition = False
 
     def start(self, from_data: bytearray, to_data: bytearray, from_leds: list[tuple[int, int]], to_leds: list[tuple[int, int]], width: int, height: int):
+        self.init_arrays(width, height, len(from_leds))
         self.from_data = from_data
         self.to_data = to_data
         self.from_leds = from_leds
         self.to_leds = to_leds
-        self.data = from_data.copy()
-        self.leds = from_leds.copy()
+        self.lcd_mem_set = from_data.copy()
+        self.lcd_led_set = from_leds.copy()
         self.start_time = datetime.now()
         self.width = width
         self.height = height

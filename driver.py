@@ -4,22 +4,15 @@ from threading import Thread, Condition
 from lcd import LCD, LCDKey, LCDKeyEvent
 from transition import LCDTransition
 from transitions.none import NoneLCDTransition
-from utils import LEDColorPreset, critical_call
+from utils import critical_call
+from renderable import DEFAULT_CHAR
 
-DEFAULT_CHAR = ord(" ")
 MIN_SPACING_BETWEEN_DIFFS = 5
-CHANGE_MAX_LEN = 20
 
 _MIN_SPACING_VAR = MIN_SPACING_BETWEEN_DIFFS - 1
 
-TRANSITION_RENDER_PERIOD = 0.1
-
 class LCDDriver(ABC):
     id: int
-    lcd_width: int
-    lcd_height: int
-    lcd_led_count: int
-    lcd_pixel_count: int
 
     _lcd: LCD
     _should_run: bool
@@ -27,27 +20,27 @@ class LCDDriver(ABC):
     _render_thread: Thread
     _lines: list[str]
     _lcd_mem_is: bytearray
-    _lcd_mem_set: bytearray
     _lcd_led_is: list[tuple[int, int]]
-    _lcd_led_set: list[tuple[int, int]]
     _render_wait: Condition
     _transition: LCDTransition
     _transition_start: bool
     _transition_cancel: bool
     _do_render_force: bool
 
+    lcd_width: int
+    lcd_height: int
+    lcd_led_count: int
+    lcd_change_max_len: int
+
     def __init__(self, config):
         self.lcd = None
         self._should_run = False
-        self._render_period = 1
+        self._render_period = 0.1
         if "render_period" in config:
             self._render_period = config["render_period"]
         self._render_thread = None
         self._lines = []
         self._render_wait = Condition()
-        self.lcd_width = 0
-        self.lcd_height = 0
-        self.lcd_pixel_count = 0
         self._lcd = None
         self._do_render_force = False
 
@@ -68,6 +61,7 @@ class LCDDriver(ABC):
         self.lcd_width = self._lcd.width()
         self.lcd_height = self._lcd.height()
         self.lcd_led_count = self._lcd.led_count()
+        self.lcd_change_max_len = self._lcd.max_write_len()
         self._should_run = True
         self._render_thread = Thread(name=f"LCD render {self._lcd.port}", target=critical_call, args=(self._loop,))
         self._render_thread.start()
@@ -116,18 +110,15 @@ class LCDDriver(ABC):
         self._transition_cancel = False
 
         self._lcd.clear()
+        for i in range(self.lcd_led_count):
+            self._lcd.write_led(i, 0, 0)
 
         self.lcd_pixel_count = self.lcd_width * self.lcd_height
         self._lcd_mem_is = bytearray(self.lcd_pixel_count)
-        self._lcd_mem_set = bytearray(self.lcd_pixel_count)
         for i in range(self.lcd_pixel_count):
             self._lcd_mem_is[i] = DEFAULT_CHAR
-            self._lcd_mem_set[i] = DEFAULT_CHAR
 
-        self._lcd_led_is = [(-1, -1)] * self.lcd_led_count
-        self._lcd_led_set = [(-1, -1)] * self.lcd_led_count
-        for i in range(self.lcd_led_count):
-            self.set_led(i, LEDColorPreset.OFF.value)
+        self._lcd_led_is = [(0, 0)] * self.lcd_led_count
 
         self.render_init()
         while self._should_run:
@@ -136,50 +127,29 @@ class LCDDriver(ABC):
                 self._transition.stop()
                 self._transition_cancel = False
             elif self._transition_start:
-                self.render(rerender=True)
-                self._transition.start(from_data=self._lcd_mem_is, to_data=self._lcd_mem_set, from_leds=self._lcd_led_is, to_leds=self._lcd_led_set, width=self.lcd_width, height=self.lcd_height)
+                data, leds = self.render()
+                self._transition.start(from_data=self._lcd_mem_is, to_data=data, from_leds=self._lcd_led_is, to_leds=leds, width=self.lcd_width, height=self.lcd_height)
                 self._transition_start = False
 
-            in_transition = self._transition.running
-            if in_transition and self._transition.render():
-                data = self._transition.data
-                leds = self._transition.leds
+            if self._transition.running:
+                data, leds = self._transition.render()
+                if data is None or leds is None:
+                    data, leds = self.render()
             else:
-                self.render()
-                data = self._lcd_mem_set
-                leds = self._lcd_led_set
-                in_transition = False
+                data, leds = self.render()
 
-            self._render_send_display(data)
-            self._render_send_leds(leds)
+            if data is not None:
+                self._render_send_display(data)
+            if leds is not None:
+                self._render_send_leds(leds)
 
             self._render_wait.acquire()
             if not self._do_render_force:
-                self._render_wait.wait(TRANSITION_RENDER_PERIOD if in_transition else self._render_period)
+                self._render_wait.wait(self._render_period)
             self._do_render_force = False
             self._render_wait.release()
 
         self._lcd.close()
-
-    def set_led(self, idx: int, color: tuple[int, int]) -> None:
-        self._lcd_led_set[idx] = color
-
-    def clear(self) -> None:
-        for i in range(self.lcd_pixel_count):
-            self._lcd_mem_set[i] = DEFAULT_CHAR
-
-    def write_at(self, col: int, row: int, content: str) -> None:
-        content_bytes = content.encode("latin-1")
-        for i, c in enumerate(content_bytes):
-            self._lcd_mem_set[(row * self.lcd_width) + col + i] = c
-
-    def set_line(self, idx: int, content: str) -> None:
-        content_len = len(content)
-        if content_len > self.lcd_width:
-            raise ValueError(f"Line longer than LCD line width of {self.lcd_width}")
-        elif content_len < self.lcd_width:
-            content += " " * (self.lcd_width - content_len)
-        self.write_at(0, idx, content)
 
     def _render_send_leds(self, leds: list[tuple[int, int]]):
         for idx, (red, green) in enumerate(leds):
@@ -199,9 +169,12 @@ class LCDDriver(ABC):
             if diff:
                 if change_start < 0:
                     change_start = i
-                elif i - change_start >= CHANGE_MAX_LEN:
-                    changes.append((change_start, i))
+                elif i - change_start >= self.lcd_change_max_len:
+                    if change_end < 0:
+                        change_end = i
+                    changes.append((change_start, change_end))
                     change_start = i
+                    change_end = -1
                 elif change_end >= 0:
                     change_end = -1
             elif change_start >= 0:
@@ -227,5 +200,5 @@ class LCDDriver(ABC):
         pass
 
     @abstractmethod
-    def render(self, rerender=False):
+    def render(self) -> tuple[bytearray, list[tuple[int, int]]]:
         pass

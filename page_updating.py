@@ -9,8 +9,8 @@ from utils import LEDColorPreset, critical_call
 class UpdateStatus(Enum):
     NONE = (LEDColorPreset.OFF, "?")
     RUNNING = (LEDColorPreset.WARNING, "\xBB")
-    SUCCESS = (LEDColorPreset.OFF, "")
-    ERROR = (LEDColorPreset.CRITICAL, "\x24")
+    SUCCESS = (LEDColorPreset.OFF, "=")
+    ERROR = (LEDColorPreset.CRITICAL, "!")
 
 class UpdatingLCDPage(LCDPage):
     update_period: float
@@ -18,9 +18,7 @@ class UpdatingLCDPage(LCDPage):
     use_char0_for_updates: bool
     _update_wait: Condition
     _update_thread: Thread
-    _first_update: bool
     _update_status: UpdateStatus
-    _had_update: bool
 
     def __init__(self, config, driver: PagedLCDDriver, default_title: str = None):
         super().__init__(config, driver, default_title)
@@ -38,8 +36,7 @@ class UpdatingLCDPage(LCDPage):
 
     def start(self):
         super().start()
-        self._first_update = True
-        self._had_update = True
+        self.write_at(0, 1, "Loading...")
         self._update_thread = Thread(name=f"LCD page update {self.title}", target=critical_call, args=(self._update_loop,))
         self._update_thread.start()
 
@@ -57,10 +54,7 @@ class UpdatingLCDPage(LCDPage):
             self._set_update_status(UpdateStatus.RUNNING)
             try:
                 self.update()
-                self._had_update = True
                 self._set_update_status(UpdateStatus.SUCCESS)
-                if not self.use_led0_for_updates:
-                    self.do_render_if_current()
             except Exception:
                 self._set_update_status(UpdateStatus.ERROR)
                 print_exc()
@@ -72,26 +66,9 @@ class UpdatingLCDPage(LCDPage):
     def _set_update_status(self, status: UpdateStatus):
         self._update_status = status
         if self.use_led0_for_updates:
-            self.do_render_if_current()
-
-    def enable_rerender(self):
-        self._had_update = True
-
-    def render(self):
-        super().render()
-
-        if self.use_led0_for_updates:
-            self.driver.set_led(0, self._update_status.value[0].value)
-
+            self.set_led(0, self._update_status.value[0].value)
         if self.use_char0_for_updates:
-            self.driver.write_at(0, 0, self._update_status.value[1])
-
-        if self._had_update:
-            self._had_update = False
-            self.render_on_update()
-
-    def render_on_update(self):
-        pass
+            self.write_at(0, 0, self._update_status.value[1])
 
     def update(self):
         pass

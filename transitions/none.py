@@ -1,8 +1,8 @@
 from transition import LCDTransition
 
 class NoneLCDTransition(LCDTransition):
-    def render(self) -> bool:
+    def render(self):
         self.running = False
-        return False
+        return None, None
 
 TRANSITION = NoneLCDTransition

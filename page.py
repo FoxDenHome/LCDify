@@ -1,7 +1,8 @@
 from drivers.paged import PagedLCDDriver
+from renderable import Renderable
 from utils import LEDColorPreset
 
-class LCDPage():
+class LCDPage(Renderable):
     should_run: bool
     driver: PagedLCDDriver
     formatted_title: str
@@ -17,11 +18,6 @@ class LCDPage():
 
     def is_current(self) -> bool:
         return self.driver.pages[self.driver.current_page] == self
-
-    def do_render_if_current(self) -> None:
-        if self.is_current():
-            self.driver.do_render()
-
 
     def calc_led_lower_threshhold(self, val: float, warn: float, crit: float):
         if val >= warn:
@@ -40,17 +36,13 @@ class LCDPage():
             return LEDColorPreset.CRITICAL
 
     def start(self):
+        self.init_arrays(self.driver.lcd_height, self.driver.lcd_width, self.driver.lcd_led_count)
         self.should_run = True
         self.formatted_title = self.format_text_center(self.title, "=")
+        self.set_line(0, self.formatted_title)
 
     def stop(self):
         self.should_run = False
-
-    def render(self) -> None:
-        self.driver.set_line(0, self.formatted_title)
-
-    def enable_rerender(self):
-        pass
 
     def format_text_center(self, text: str, pad_char: str) -> str:
         text_len = len(text)

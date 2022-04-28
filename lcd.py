@@ -1,6 +1,9 @@
 from dataclasses import dataclass
-from threading import Condition, Thread
+from multiprocessing.sharedctypes import Value
+from threading import Condition, Thread, Lock
 from enum import Enum
+from time import sleep
+from tkinter.tix import MAX
 from traceback import print_exc
 from serial import Serial
 from crc import crc16
@@ -140,7 +143,7 @@ class LCD():
     baudrate: int
     _serial: Serial
     _last_response: LCDPacket
-    _command_lock: Condition
+    _command_response_cond: Condition
     _buffer: list[int]
     _reader_thread_var: Thread
     _key_poll_wait: Condition
@@ -150,7 +153,7 @@ class LCD():
         self.baudrate = baudrate
         self._serial = None
         self._last_response = None
-        self._command_lock = Condition()
+        self._command_response_cond = Condition()
         self._buffer = []
         self._reader_thread_var = None
         self._should_run = False
@@ -166,6 +169,9 @@ class LCD():
 
     def led_count(self) -> int:
         return 4
+
+    def max_write_len(self) -> int:
+        return MAX_DATA_LENGTH - 2 # col, row
 
     def open(self) -> None:
         self.close()
@@ -278,10 +284,12 @@ class LCD():
             if packet.command == REPORT_KEY:
                 self._handle_key_report(packet.data)
             return
-        self._command_lock.acquire()
+        self._command_response_cond.acquire()
+        if self._last_response is not None:
+            print("WTF", self._last_response, packet)
         self._last_response = packet
-        self._command_lock.notify()
-        self._command_lock.release()
+        self._command_response_cond.notify_all()
+        self._command_response_cond.release()
 
     def _skip_buffer(self, num: int = 1) -> LCDPacket:
         self._buffer = self._buffer[num:]
@@ -323,7 +331,20 @@ class LCD():
                 print_exc()
 
     def send(self, command: int, data: bytearray = []) -> bytearray:
+        retries = 5
+        while retries > 0:
+            try:
+                return self._send(command, data)
+            except LCDTimeoutException:
+                sleep(0.5)
+                pass
+            retries -= 1
+        raise LCDTimeoutException()
+
+    def _send(self, command: int, data: bytearray = []) -> bytearray:
         data_len = len(data)
+        if data_len > MAX_DATA_LENGTH:
+            raise ValueError(f"Data length too long: {data_len} > {MAX_DATA_LENGTH}")
         packet = bytearray(PACKET_CONST_ELEM_LEN + data_len)
         packet[0] = command
         packet[1] = data_len
@@ -333,13 +354,18 @@ class LCD():
         packet[2 + data_len] = crc & 0xFF
         packet[3 + data_len] = crc >> 8
         
-        self._command_lock.acquire()
+        self._command_response_cond.acquire()
+
         self._serial.write(packet)
-        if not self._command_lock.wait_for(lambda: self._last_response and self._last_response.command == command, timeout=0.25):
+        if self._last_response is not None:
+            print(self._last_response, command)
+        if not self._command_response_cond.wait_for(lambda: self._last_response and self._last_response.command == command, timeout=0.25):
+            self._command_response_cond.release()
             raise LCDTimeoutException()
+
         resp = self._last_response
         self._last_response = None
-        self._command_lock.release()
+        self._command_response_cond.release()
 
         if resp.type == LCDPacketType.ERROR:
             raise LCDResponseException(resp)
