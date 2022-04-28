@@ -121,14 +121,14 @@ class LCDDriver(ABC):
                 self._transition.stop()
                 self._transition_cancel = False
             elif self._transition_start:
-                data, leds = self.render()
+                data, leds = self.render(force=True)
                 self._transition.start(from_data=self._lcd_mem_is, to_data=data, from_leds=self._lcd_led_is, to_leds=leds, width=self.lcd_width, height=self.lcd_height)
                 self._transition_start = False
 
             if self._transition.running:
                 data, leds = self._transition.render()
                 if data is None or leds is None:
-                    data, leds = self.render()
+                    data, leds = self.render(force=True)
             else:
                 data, leds = self.render()
 
@@ -192,5 +192,5 @@ class LCDDriver(ABC):
         pass
 
     @abstractmethod
-    def render(self) -> tuple[bytearray, list[tuple[int, int]]]:
+    def render(self, force=True) -> tuple[bytearray, list[tuple[int, int]]]:
         pass

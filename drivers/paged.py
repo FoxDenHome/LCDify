@@ -64,11 +64,11 @@ class PagedLCDDriver(LCDDriver):
     def previous_page(self):
         self.set_page(self.current_page - 1)
 
-    def render(self):
+    def render(self, force=True):
         if self.auto_cycle_time is not None and datetime.now() - self.last_cycle_time > self.auto_cycle_time:
             self.next_page()
         page = self.pages[self.current_page]
-        if page.dirty or self.page_changed:
+        if page.dirty or self.page_changed or force:
             page.dirty = False
             self.page_changed = False
             return page.lcd_mem_set, page.lcd_led_set
