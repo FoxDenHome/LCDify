@@ -14,5 +14,6 @@ displays:
         type: paged
         pages:
             -   type: ntp
+            -   type: upspower
         transition:
             type: none

@@ -1,6 +1,6 @@
 from drivers.paged import PagedLCDDriver
 from page_updating import UpdatingLCDPage
-from prometheus import query_prometheus
+from prometheus import query_prometheus_map_by
 from utils import LEDColorPreset
 
 class PingLCDPage(UpdatingLCDPage):
@@ -11,52 +11,24 @@ class PingLCDPage(UpdatingLCDPage):
         return self.calc_led_upper_threshhold(loss, 5, 90)
 
     def update(self):
-        ping_rtt_res = query_prometheus("ping_average_response_ms > 0")
-        packet_loss_res = query_prometheus("ping_percent_packet_loss")
-
-        lte_rtt = None
-        eth_rtt = None
-        wan_rtt = None
-        for rtt in ping_rtt_res["result"]:
-            val = float(rtt["value"][1])
-            name = rtt["metric"]["name"]
-
-            if name == "lte":
-                lte_rtt = val
-            elif name == "wired":
-                eth_rtt = val
-            elif name == "internet":
-                wan_rtt = val
-
-        lte_loss = None
-        eth_loss = None
-        wan_loss = None
-        for loss in packet_loss_res["result"]:
-            val = float(loss["value"][1])
-            name = loss["metric"]["name"]
-
-            if name == "lte":
-                lte_loss = val
-            elif name == "wired":
-                eth_loss = val
-            elif name == "internet":
-                wan_loss = val
+        ping_rtt_res = query_prometheus_map_by("ping_average_response_ms > 0")
+        packet_loss_res = query_prometheus_map_by("ping_percent_packet_loss")
 
         self.set_led(1, LEDColorPreset.get_most_critical([
-            self._calc_loss_led(wan_loss),
-            self.calc_led_upper_threshhold(wan_rtt, 10, 50)
+            self._calc_loss_led(packet_loss_res["internet"]),
+            self.calc_led_upper_threshhold(ping_rtt_res["internet"], 10, 50)
         ]).value)
         self.set_led(2, LEDColorPreset.get_most_critical([
-            self._calc_loss_led(eth_loss),
-            self.calc_led_upper_threshhold(eth_rtt, 10, 50)
+            self._calc_loss_led(packet_loss_res["wired"]),
+            self.calc_led_upper_threshhold(ping_rtt_res["wired"], 10, 50)
         ]).value)
         self.set_led(3, LEDColorPreset.get_most_critical([
-            self._calc_loss_led(lte_loss),
-            self.calc_led_upper_threshhold(lte_rtt, 100, 300)
+            self._calc_loss_led(packet_loss_res["lte"]),
+            self.calc_led_upper_threshhold(ping_rtt_res["lte"], 100, 300)
         ]).value)
 
-        self.set_line(1, f"WAN {wan_rtt:4.0f} ms / {wan_loss:4.0f} %")
-        self.set_line(2, f"ETH {eth_rtt:4.0f} ms / {eth_loss:4.0f} %")
-        self.set_line(3, f"LTE {lte_rtt:4.0f} ms / {lte_loss:4.0f} %")
+        self.set_line(1, f"WAN {ping_rtt_res['internet']:4.0f} ms / {packet_loss_res['internet']:4.0f} %")
+        self.set_line(2, f"ETH {ping_rtt_res['wired']:4.0f} ms / {packet_loss_res['wired']:4.0f} %")
+        self.set_line(3, f"LTE {ping_rtt_res['lte']:4.0f} ms / {packet_loss_res['lte']:4.0f} %")
 
 PAGE = PingLCDPage

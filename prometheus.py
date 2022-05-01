@@ -11,3 +11,13 @@ def query_prometheus(query):
 def query_prometheus_first_value(query):
     res = query_prometheus(query)
     return float(res["result"][0]["value"][1])
+
+def query_prometheus_map_by(query, attrib="name"):
+    res = query_prometheus(query)
+    results = {}
+    for rtt in res["result"]:
+        val = float(rtt["value"][1])
+        name = rtt["metric"][attrib]
+        results[name] = val
+
+    return results
