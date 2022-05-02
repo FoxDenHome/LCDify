@@ -146,6 +146,8 @@ class LCDDriver(ABC):
             self._lcd_led_is[idx] = (red, green)
 
     def _render_send_display(self, data: bytearray):
+        data = data.copy()
+
         changes: list[tuple[int, int]] = []
 
         change_start = -1
@@ -180,7 +182,7 @@ class LCDDriver(ABC):
         for start, end in changes:
             self._lcd.write(start % self.lcd_width, start // self.lcd_width, data[start:end])
 
-        self._lcd_mem_is = data.copy()
+        self._lcd_mem_is = data
 
     def render_init(self):
         pass
