@@ -6,10 +6,10 @@ from page import LCDPage
 from utils import LEDColorPreset, critical_call
 
 class UpdateStatus(Enum):
-    NONE = (LEDColorPreset.OFF, "?")
-    RUNNING = (LEDColorPreset.WARNING, "\xBB")
-    SUCCESS = (LEDColorPreset.OFF, "=")
-    ERROR = (LEDColorPreset.CRITICAL, "!")
+    NONE = (LEDColorPreset.OFF.value, "?")
+    RUNNING = (LEDColorPreset.WARNING.value, "\xBB")
+    SUCCESS = (LEDColorPreset.OFF.value, "=")
+    ERROR = (LEDColorPreset.CRITICAL.value, "!")
 
 class UpdatingLCDPage(LCDPage):
     update_period: float
@@ -65,7 +65,7 @@ class UpdatingLCDPage(LCDPage):
     def _set_update_status(self, status: UpdateStatus):
         self._update_status = status
         if self.use_led0_for_updates:
-            self.set_led(0, self._update_status.value[0].value)
+            self.set_led(0, self._update_status.value[0])
         if self.use_char0_for_updates:
             self.write_at(0, 0, self._update_status.value[1])
 

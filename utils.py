@@ -13,7 +13,7 @@ def critical_call(func):
 class LEDColorPreset(Enum):
     OFF = (0, 0)
     NORMAL = (0, 100)
-    WARNING = (50, 100)
+    WARNING = (100, 100)
     CRITICAL = (100, 0)
 
     def get_most_critical(presets):
