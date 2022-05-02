@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from threading import Condition, Thread
 from enum import Enum
+from time import sleep
 from traceback import print_exc
 from serial import Serial
 from crc import crc16
@@ -143,7 +144,6 @@ class LCD():
     _command_response_cond: Condition
     _buffer: list[int]
     _reader_thread_var: Thread
-    _key_poll_wait: Condition
 
     def __init__(self, port: str, baudrate: int = LCD_BAUDRATE):
         self.port = port
@@ -154,7 +154,6 @@ class LCD():
         self._buffer = []
         self._reader_thread_var = None
         self._should_run = False
-        self._key_poll_wait = Condition()
 
         self._key_event_handlers = []
 
@@ -174,15 +173,12 @@ class LCD():
         self.close()
         self._serial = Serial(self.port, self.baudrate, timeout=1)
         self._should_run = True
-        self._reader_thread_var = Thread(name=f"LCD reader {self.port}", target=critical_call, args=(self._reader_thread,))
+        self._reader_thread_var = Thread(name=f"LCD reader {self.port}", target=critical_call, args=(self._reader_thread,), daemon=True)
         self._reader_thread_var.start()
 
     def close(self) -> None:
         self._should_run = False
         if self._reader_thread_var is not None:
-            self._key_poll_wait.acquire()
-            self._key_poll_wait.notify()
-            self._key_poll_wait.release()
             self._reader_thread_var.join()
             self._reader_thread_var = None
 
@@ -261,9 +257,7 @@ class LCD():
             except Exception:
                 print(f"Error reading from LCD on port {self.port}")
                 print_exc()
-            self._key_poll_wait.acquire()
-            self._key_poll_wait.wait(0.01)
-            self._key_poll_wait.release()
+            sleep(0.01)
     
         self._serial.close()
         self._serial = None

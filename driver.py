@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from importlib import import_module
 from threading import Thread, Condition
+from time import sleep
 from lcd import LCD, LCDKey, LCDKeyEvent
 from transition import LCDTransition
 from transitions.none import NoneLCDTransition
@@ -21,7 +22,6 @@ class LCDDriver(ABC):
     _lines: list[str]
     _lcd_mem_is: bytearray
     _lcd_led_is: list[tuple[int, int]]
-    _render_wait: Condition
     _transition: LCDTransition
     _transition_start: bool
     _transition_cancel: bool
@@ -39,7 +39,6 @@ class LCDDriver(ABC):
             self._render_period = config["render_period"]
         self._render_thread = None
         self._lines = []
-        self._render_wait = Condition()
         self._lcd = None
 
         if "transition" in config:
@@ -61,16 +60,13 @@ class LCDDriver(ABC):
         self.lcd_led_count = self._lcd.led_count()
         self.lcd_change_max_len = self._lcd.max_write_len()
         self._should_run = True
-        self._render_thread = Thread(name=f"LCD render {self._lcd.port}", target=critical_call, args=(self._loop,))
+        self._render_thread = Thread(name=f"LCD render {self._lcd.port}", target=critical_call, args=(self._loop,), daemon=True)
         self._render_thread.start()
 
     def stop(self):
         self._should_run = False
 
         if self._render_thread is not None:
-            self._render_wait.acquire()
-            self._render_wait.notify_all()
-            self._render_wait.release()
             self._render_thread.join()
             self._render_thread = None
 
@@ -137,9 +133,7 @@ class LCDDriver(ABC):
             if leds is not None:
                 self._render_send_leds(leds)
 
-            self._render_wait.acquire()
-            self._render_wait.wait(self._render_period)
-            self._render_wait.release()
+            sleep(self._render_period)
 
         self._lcd.close()
 

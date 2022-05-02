@@ -36,7 +36,7 @@ class UpdatingLCDPage(LCDPage):
     def start(self):
         super().start()
         self.write_at(0, 1, "Loading...")
-        self._update_thread = Thread(name=f"LCD page update {self.title}", target=critical_call, args=(self._update_loop,))
+        self._update_thread = Thread(name=f"LCDPage update {self.title}", target=critical_call, args=(self._update_loop,), daemon=True)
         self._update_thread.start()
 
     def stop(self):

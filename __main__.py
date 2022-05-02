@@ -53,20 +53,9 @@ def find_first_free_port():
         return None
     return ports_without_id.pop(0)
 
-def _force_stop_do_in(seconds: int):
-    sleep(seconds)
-    print("Forced stop hit")
-    _exit(2)
-
-def force_stop_in(seconds: int):
-    t = Thread(target=_force_stop_do_in, args=(seconds,), daemon=True)
-    t.start()
-
-displays_configs = CONFIG["displays"]
-
 drivers = []
 
-for config in displays_configs:
+for config in CONFIG["displays"]:
     id = config["id"]
     name = config["name"]
     port, version = find_port_by_id(id)
@@ -96,14 +85,6 @@ for config in displays_configs:
 
 while True:
     try:
-        sleep(0.1)
+        sleep(1000)
     except KeyboardInterrupt:
         break
-
-force_stop_in(5)
-
-for driver in drivers:
-    try:
-        driver.stop()
-    except KeyboardInterrupt:
-        pass
