@@ -277,7 +277,7 @@ class LCD():
             return
         self._command_response_cond.acquire()
         if self._last_response is not None:
-            print("WTF", self._last_response, packet)
+            print("Got a response while another one was already buffered", self._last_response, packet)
         self._last_response = packet
         self._command_response_cond.notify_all()
         self._command_response_cond.release()
@@ -347,8 +347,6 @@ class LCD():
         self._command_response_cond.acquire()
 
         self._serial.write(packet)
-        if self._last_response is not None:
-            print(self._last_response, command)
         if not self._command_response_cond.wait_for(lambda: self._last_response and self._last_response.command == command, timeout=0.25):
             self._command_response_cond.release()
             raise LCDTimeoutException()
