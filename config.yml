@@ -7,7 +7,7 @@ displays:
             -   type: lte
             -   type: ping
         transition:
-            type: none
+            type: curtain
 -   id: 2
     name: Right
     driver:
@@ -16,4 +16,4 @@ displays:
             -   type: ntp
             -   type: upspower
         transition:
-            type: none
+            type: curtain

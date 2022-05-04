@@ -14,7 +14,7 @@ class LCDTransition(ABC, Renderable):
     custom_led_transition: bool
 
     def __init__(self, config):
-        self.period = 1
+        self.period = 2
         if "period" in config:
             self.period = config["period"]
         self.progress = 1
@@ -22,7 +22,7 @@ class LCDTransition(ABC, Renderable):
         self.custom_led_transition = False
 
     def start(self, from_data: bytearray, to_data: bytearray, from_leds: list[tuple[int, int]], to_leds: list[tuple[int, int]], width: int, height: int):
-        self.init_arrays(width, height, len(from_leds))
+        self.init_arrays(height, width, len(from_leds))
         self.from_data = from_data
         self.to_data = to_data
         self.from_leds = from_leds
@@ -53,13 +53,13 @@ class LCDTransition(ABC, Renderable):
         pass
 
     def linear_transition(self, from_num: int, to_num: int) -> None:
-        return from_num + ((to_num - from_num,) * self.progress)
+        return from_num + ((to_num - from_num) * self.progress)
 
     def render_leds_simple(self) -> None:
         for idx, from_led in enumerate(self.from_leds):
-            self.leds[idx] = (
-                self.linear_transition(from_led[0], self.to_leds[idx][0]),
-                self.linear_transition(from_led[1], self.to_leds[idx][1]),
+            self.lcd_led_set[idx] = (
+                round(self.linear_transition(from_led[0], self.to_leds[idx][0])),
+                round(self.linear_transition(from_led[1], self.to_leds[idx][1])),
             )
 
     @abstractmethod
