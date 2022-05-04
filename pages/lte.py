@@ -1,6 +1,6 @@
 from drivers.paged import PagedLCDDriver
 from page_updating import UpdatingLCDPage
-from prometheus import query_prometheus_first_value
+from prometheus import build_prometheus_filter, query_prometheus_first_value
 from utils import LEDColorPreset
 
 CONVERT_BYTES_TO_MB = 1024 * 1024
@@ -12,13 +12,20 @@ class LTELCDPage(UpdatingLCDPage):
         super().__init__(config, driver, "LTE (MB)")
 
     def update(self):
-        lte_rsrp = query_prometheus_first_value("modem_signal_lte_rsrp")
-        lte_rsrq = query_prometheus_first_value("modem_signal_lte_rsrq")
-        lte_rssi = query_prometheus_first_value("modem_signal_lte_rssi")
-        lte_snr = query_prometheus_first_value("modem_signal_lte_snr")
+        filter = build_prometheus_filter({
+            "instance": "router.foxden.network:9100"
+        })
+        lte_rsrp = query_prometheus_first_value(f"modem_signal_lte_rsrp{filter}")
+        lte_rsrq = query_prometheus_first_value(f"modem_signal_lte_rsrq{filter}")
+        lte_rssi = query_prometheus_first_value(f"modem_signal_lte_rssi{filter}")
+        lte_snr = query_prometheus_first_value(f"modem_signal_lte_snr{filter}")
         
-        lte_rx = query_prometheus_first_value("increase(node_network_receive_bytes_total{instance=\"router.foxden.network:9100\",device=\"wwan0\"}[30d])") / CONVERT_BYTES_TO_MB
-        lte_tx = query_prometheus_first_value("increase(node_network_transmit_bytes_total{instance=\"router.foxden.network:9100\",device=\"wwan0\"}[30d])") / CONVERT_BYTES_TO_MB
+        filter = build_prometheus_filter({
+            "instance": "router.foxden.network:9100",
+            "device": "wwan0"
+        })
+        lte_rx = query_prometheus_first_value(f"increase(node_network_receive_bytes_total{filter}[30d])") / CONVERT_BYTES_TO_MB
+        lte_tx = query_prometheus_first_value(f"increase(node_network_transmit_bytes_total{filter}[30d])") / CONVERT_BYTES_TO_MB
 
         self.set_led(1, LEDColorPreset.get_most_critical([
             self.calc_led_lower_threshhold(lte_rsrp, -90, -100),

@@ -21,3 +21,9 @@ def query_prometheus_map_by(query, attrib="name"):
         results[name] = val
 
     return results
+
+def build_prometheus_filter(attribs: map) -> str:
+    filters = []
+    for attrib, value in attribs.items():
+        filters.append(f"{attrib}=\"{value}\"")
+    return "{" + ",".join(filters) + "}"

@@ -1,13 +1,15 @@
 from drivers.paged import PagedLCDDriver
 from page_updating import UpdatingLCDPage
-from prometheus import query_prometheus_first_value
+from prometheus import build_prometheus_filter, query_prometheus_first_value
 
 class UPSPowerLCDPage(UpdatingLCDPage):
     def __init__(self, config, driver: PagedLCDDriver):
         super().__init__(config, driver, "UPS Power")
 
     def update(self):
-        filter = "{hostname=\"ups-rack\"}"
+        filter = build_prometheus_filter({
+            "hostname": "ups-rack",
+        })
         ups_power_res = query_prometheus_first_value(f"snmp_upsAdvOutputActivePower{filter}")
         ups_runtime_res = query_prometheus_first_value(f"snmp_upsAdvBatteryRunTimeRemaining{filter} / 6000")
         ups_capacity_res = query_prometheus_first_value(f"snmp_upsHighPrecBatteryCapacity{filter}")
