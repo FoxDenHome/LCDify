@@ -10,22 +10,16 @@ LTE_DATA_LIMIT = 2000
 class LTELCDPage(UpdatingLCDPage):
     def __init__(self, config, driver: PagedLCDDriver):
         super().__init__(config, driver, "LTE (MB)")
+        self.filter = build_prometheus_filter(config["filter"])
 
     def update(self):
-        filter = build_prometheus_filter({
-            "instance": "router.foxden.network:9100"
-        })
-        lte_rsrp = query_prometheus_first_value(f"modem_signal_lte_rsrp{filter}")
-        lte_rsrq = query_prometheus_first_value(f"modem_signal_lte_rsrq{filter}")
-        lte_rssi = query_prometheus_first_value(f"modem_signal_lte_rssi{filter}")
-        lte_snr = query_prometheus_first_value(f"modem_signal_lte_snr{filter}")
+        lte_rsrp = query_prometheus_first_value(f"modem_signal_lte_rsrp{self.filter}")
+        lte_rsrq = query_prometheus_first_value(f"modem_signal_lte_rsrq{self.filter}")
+        lte_rssi = query_prometheus_first_value(f"modem_signal_lte_rssi{self.filter}")
+        lte_snr = query_prometheus_first_value(f"modem_signal_lte_snr{self.filter}")
         
-        filter = build_prometheus_filter({
-            "instance": "router.foxden.network:9100",
-            "device": "wwan0"
-        })
-        lte_rx = query_prometheus_first_value(f"increase(node_network_receive_bytes_total{filter}[30d])") / CONVERT_BYTES_TO_MB
-        lte_tx = query_prometheus_first_value(f"increase(node_network_transmit_bytes_total{filter}[30d])") / CONVERT_BYTES_TO_MB
+        lte_rx = query_prometheus_first_value(f"increase(node_network_receive_bytes_total{self.filter}[30d])") / CONVERT_BYTES_TO_MB
+        lte_tx = query_prometheus_first_value(f"increase(node_network_transmit_bytes_total{self.filter}[30d])") / CONVERT_BYTES_TO_MB
 
         self.set_led(1, LEDColorPreset.get_most_critical([
             self.calc_led_lower_threshhold(lte_rsrp, -90, -100),

@@ -5,6 +5,9 @@ displays:
         type: paged
         pages:
             -   type: lte
+                filter:
+                    instance: router.foxden.network:9100
+                    device: wwan0
             -   type: ping
 -   id: 2
     name: Right
@@ -12,4 +15,8 @@ displays:
         type: paged
         pages:
             -   type: ntp
+                filter:
+                    instance: ntp.foxden.network:9100
             -   type: upspower
+                filter:
+                    hostname: ups-rack
