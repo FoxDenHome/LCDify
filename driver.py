@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 from importlib import import_module
-from threading import Thread, Condition
+from threading import Thread
 from time import sleep
 from lcd import LCD, LCDKey, LCDKeyEvent
-from transition import LCDTransition
-from transitions.none import NoneLCDTransition
 from utils import critical_call
 from renderable import DEFAULT_CHAR
 
@@ -22,9 +20,6 @@ class LCDDriver(ABC):
     _lines: list[str]
     _lcd_mem_is: bytearray
     _lcd_led_is: list[tuple[int, int]]
-    _transition: LCDTransition
-    _transition_start: bool
-    _transition_cancel: bool
 
     lcd_width: int
     lcd_height: int
@@ -40,13 +35,6 @@ class LCDDriver(ABC):
         self._render_thread = None
         self._lines = []
         self._lcd = None
-
-        if "transition" in config:
-            transition_config = config["transition"]
-            TransitionClass = import_module(f"transitions.{transition_config['type']}", package=".").TRANSITION
-            self._transition = TransitionClass(config=transition_config)
-        else:
-            self._transition = NoneLCDTransition(config={})
 
     def set_port(self, port):
         self.stop()
@@ -89,16 +77,7 @@ class LCDDriver(ABC):
     def on_key_press(self, key: LCDKey):
         pass
 
-    def start_transition(self):
-        self._transition_start = True
-
-    def cancel_transition(self):
-        self._transition_cancel = True
-
     def _loop(self):
-        self._transition_start = False
-        self._transition_cancel = False
-
         self._lcd.clear()
         for i in range(self.lcd_led_count):
             self._lcd.write_led(i, 0, 0)
@@ -112,21 +91,7 @@ class LCDDriver(ABC):
 
         self.render_init()
         while self._should_run:
-            if self._transition_cancel:
-                self._transition_start = False
-                self._transition.stop()
-                self._transition_cancel = False
-            elif self._transition_start:
-                data, leds = self.render(force=True)
-                self._transition.start(from_data=self._lcd_mem_is, to_data=data, from_leds=self._lcd_led_is, to_leds=leds, width=self.lcd_width, height=self.lcd_height)
-                self._transition_start = False
-
-            if self._transition.running:
-                data, leds = self._transition.render()
-                if data is None or leds is None:
-                    data, leds = self.render(force=True)
-            else:
-                data, leds = self.render()
+            data, leds = self.render()
 
             if data is not None:
                 self._render_send_display(data)

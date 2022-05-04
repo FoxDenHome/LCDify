@@ -6,8 +6,6 @@ displays:
         pages:
             -   type: lte
             -   type: ping
-        transition:
-            type: curtain
 -   id: 2
     name: Right
     driver:
@@ -15,5 +13,3 @@ displays:
         pages:
             -   type: ntp
             -   type: upspower
-        transition:
-            type: curtain

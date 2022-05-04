@@ -51,7 +51,6 @@ class PagedLCDDriver(LCDDriver):
             self.previous_page()
         else:
             return
-        self.start_transition()
 
     def set_page(self, page: int):
         self.last_cycle_time = datetime.now()
