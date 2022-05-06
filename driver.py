@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from importlib import import_module
 from threading import Thread
 from time import sleep
 from lcd import LCD, LCDKey, LCDKeyEvent
@@ -11,8 +10,6 @@ MIN_SPACING_BETWEEN_DIFFS = 5
 _MIN_SPACING_VAR = MIN_SPACING_BETWEEN_DIFFS - 1
 
 class LCDDriver(ABC):
-    id: int
-
     _lcd: LCD
     _should_run: bool
     _render_period: float
@@ -90,6 +87,7 @@ class LCDDriver(ABC):
         self._lcd_led_is = [(0, 0)] * self.lcd_led_count
 
         self.render_init()
+
         while self._should_run:
             data, leds = self.render()
 
