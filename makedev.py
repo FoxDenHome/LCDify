@@ -3,7 +3,7 @@ from stat import S_IFCHR
 
 
 def make_tty_dev(idx: int) -> None:
-    dev = makedev(major=188, minor=idx)
+    dev = makedev(188, idx)
     mknod(path="/dev/ttyUSB{idx}}", mode=0o666 | S_IFCHR, dev=dev)
 
 
