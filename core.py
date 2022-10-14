@@ -4,7 +4,6 @@ from driver import LCDDriver
 from lcd import LCD_KEY_MASK_ALL, LCDWithID
 from serial.tools.list_ports import comports
 from importlib import import_module
-from os import _exit
 
 LCD_INITIAL_CONFIG_VERSION = 0x01
 
@@ -65,7 +64,7 @@ def serve_core() -> None:
             port = find_first_free_port()
             if port is None:
                 print("No free ports found, either!")
-                _exit(3)
+                return
 
             print(f"Found free port {port}. Writing ID...")
             lcd = LCDWithID(port)

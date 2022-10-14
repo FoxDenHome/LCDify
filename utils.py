@@ -1,3 +1,4 @@
+from sys import stderr, stdout
 from traceback import print_exc
 from enum import Enum
 from os import _exit
@@ -8,6 +9,8 @@ def critical_call(func):
     except Exception:
         print("Fatal exception happened!")
         print_exc()
+        stderr.flush()
+        stdout.flush()
         _exit(1)
 
 class LEDColorPreset(Enum):
