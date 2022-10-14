@@ -38,6 +38,7 @@ def serve_core(override_glob: Optional[str]) -> None:
     ports_by_id = {}
     ports_without_id = []
     for port in ports:
+        print(f"Found port \"{port.device}\" which is \"{port.description}\"")
         if "CFA635-USB" not in port.description:
             continue
         lcd = LCDWithID(port.device)
