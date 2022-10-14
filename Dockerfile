@@ -7,6 +7,8 @@ WORKDIR /app
 
 RUN /app/mknod.sh 10
 
+ENV SERIAL_PORT_GLOB=/vdev/*
+
 USER 1000:1000
 
 CMD ["python3", "."]
