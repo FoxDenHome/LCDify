@@ -1,3 +1,4 @@
+from time import sleep
 from core import serve_core
 from os import getenv, getgid, getuid, setresgid, setresuid
 from makedev import make_tty_devs
@@ -16,4 +17,7 @@ if uid > 0:
 
 print(f"Running as UID {getuid()}, GID {getgid()}")
 
-serve_core()
+try:
+    serve_core()
+finally:
+    sleep(1000)
