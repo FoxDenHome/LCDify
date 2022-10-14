@@ -38,7 +38,7 @@ def serve_core(override_glob: Optional[str]) -> None:
     ports_by_id = {}
     ports_without_id = []
     for port in ports:
-        print(f"Found port \"{port.device}\" which is \"{port.description}\"")
+        print(f"Found port \"{port.device}\" which is \"{port.description}\"", flush=True)
         if "CFA635-USB" not in port.description:
             continue
         lcd = LCDWithID(port.device)
@@ -68,17 +68,17 @@ def serve_core(override_glob: Optional[str]) -> None:
         port, version = find_port_by_id(id)
 
         if port is None:
-            print(f"No port found for display {name} (ID {id}). Trying to find a free port.")
+            print(f"No port found for display {name} (ID {id}). Trying to find a free port.", flush=True)
             port = find_first_free_port()
             if port is None:
-                print("No free ports found, either!")
+                print("No free ports found, either!", flush=True)
                 return
 
-            print(f"Found free port {port}. Writing ID...")
+            print(f"Found free port {port}. Writing ID...", flush=True)
             lcd = LCDWithID(port)
             initial_config(lcd, id)
             version = LCD_INITIAL_CONFIG_VERSION
-            print(f"ID written to {port}!")
+            print(f"ID written to {port}!", flush=True)
 
         if version != LCD_INITIAL_CONFIG_VERSION:
             initial_config(LCDWithID(port), id)

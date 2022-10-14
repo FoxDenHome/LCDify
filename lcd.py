@@ -255,7 +255,7 @@ class LCD():
             try:
                 self._read()
             except Exception:
-                print(f"Error reading from LCD on port {self.port}")
+                print(f"Error reading from LCD on port {self.port}", flush=True)
                 print_exc()
             sleep(0.01)
     
@@ -269,7 +269,7 @@ class LCD():
         if packet is None:
             return
         if packet.type == LCDPacketType.REQUEST:
-            print("REQUEST type packet from LCD. This should never happen!")
+            print("REQUEST type packet from LCD. This should never happen!", flush=True)
             return
         if packet.type == LCDPacketType.REPORT:
             if packet.command == REPORT_KEY:
@@ -277,7 +277,7 @@ class LCD():
             return
         self._command_response_cond.acquire()
         if self._last_response is not None:
-            print("Got a response while another one was already buffered", self._last_response, packet)
+            print("Got a response while another one was already buffered", self._last_response, packet, flush=True)
         self._last_response = packet
         self._command_response_cond.notify_all()
         self._command_response_cond.release()
@@ -318,7 +318,7 @@ class LCD():
             try:
                 handler(key=key, event=event)
             except Exception:
-                print(f"Error in key event handler on port {self.port} with handler {handler}")
+                print(f"Error in key event handler on port {self.port} with handler {handler}", flush=True)
                 print_exc()
 
     def send(self, command: int, data: bytearray = []) -> bytearray:
@@ -327,7 +327,7 @@ class LCD():
             try:
                 return self._send(command, data)
             except LCDTimeoutException:
-                print(f"LCD timeout on {self.port}...")
+                print(f"LCD timeout on {self.port}...", flush=True)
             retries -= 1
         raise LCDTimeoutException()
 

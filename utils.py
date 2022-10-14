@@ -7,7 +7,7 @@ def critical_call(func):
     try:
         return func()
     except Exception:
-        print("Fatal exception happened!")
+        print("Fatal exception happened!", flush=True)
         print_exc()
         stderr.flush()
         stdout.flush()
