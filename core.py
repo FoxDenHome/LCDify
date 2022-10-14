@@ -5,7 +5,6 @@ from config import CONFIG
 from driver import LCDDriver
 from lcd import LCD_KEY_MASK_ALL, LCDWithID
 from serial.tools.list_ports import comports
-from serial.tools.list_ports_common import ListPortInfo
 from importlib import import_module
 
 LCD_INITIAL_CONFIG_VERSION = 0x01
@@ -31,7 +30,8 @@ def initial_config(lcd: LCDWithID, id: int):
 def serve_core(override_glob: Optional[str]) -> None:
     ports = None
     if override_glob:
-        ports = [ListPortInfo(p) for p in glob(override_glob)]
+        from serial.tools.list_ports_linux import SysFS
+        ports = [SysFS(p) for p in glob(override_glob)]
     else:
         ports = comports()
 
