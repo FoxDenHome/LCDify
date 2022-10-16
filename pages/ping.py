@@ -31,6 +31,6 @@ class PingLCDPage(UpdatingLCDPage):
 
         self._make_line_res(1, "WAN", ping_rtt_res, packet_loss_res, "internet", 10, 50)
         self._make_line_res(2, "ETH", ping_rtt_res, packet_loss_res, "wired", 10, 50)
-        self._make_line_res(3, "LTE", ping_rtt_res, packet_loss_res, "lte", 100, 300)
+        #self._make_line_res(3, "LTE", ping_rtt_res, packet_loss_res, "lte", 100, 300)
 
 PAGE = PingLCDPage
